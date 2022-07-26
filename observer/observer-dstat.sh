@@ -8,6 +8,9 @@ Disk metrics
 Network metrics
 System-calls metrics
 
+generates #ITERTIONS .csv files, each has #OBSERVATIONS entries
+generates a total of ITERATIONS * OBSERVATIONS observation entries
+
 based on dstat:
 https://manpages.ubuntu.com/manpages/kinetic/en/man1/dstat.1.html
 https://linux.die.net/man/1/dstat
@@ -16,10 +19,10 @@ sudo apt-get install dstat
 '
 cd /root/MTDPolicy/data/csv/
 
-number=6
+iterations=60
 delay=1
-count=1
-for ((i = 0 ; i < $number ; i++)); do
+observations=30
+for ((i = 0 ; i < $iterations ; i++)); do
     now=`date +%F-%H-%M-%S`
     suffix="-log.csv"
     filename="$path$now$suffix"
@@ -36,5 +39,5 @@ for ((i = 0 ; i < $number ; i++)); do
     # -p        : enable process stats (runnable, uninterruptible, new)
     # -N eth0   : specifiys network on eth0
     # -ouput    : write CSV output to file
-    dstat -t --cpu --mem --fs -d --disk-tps -n --tcp -y -p -N eth0 --output $filename $delay $count
+    dstat -t --cpu --mem --fs -d --disk-tps -n --tcp -y -p -N eth0 --output $filename $delay $observations
 done
