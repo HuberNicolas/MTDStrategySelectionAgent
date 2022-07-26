@@ -31,12 +31,9 @@ def generateDF(path):
         # check if last col has any NaN
         if(df.iloc[:,-1:].isnull().values.any()):
             df = df.iloc[:, :-1] # remove last col (NaN)
-        
-        
         frames.append(df)
     # merge df and set header
     df = pd.concat(frames)
-    print(df)
     df.columns = COLS
 
     # remove duplicates
