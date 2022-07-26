@@ -32,6 +32,6 @@ for dataset in observations:
     df = preprocess.generateDF(dataset)
     df = postprocess.fixYear(df=df)
     df = postprocess.reindex(df=df, keep=KEEP)
-    postprocess.saveCSV(df=df, prefix=datasetName)
+    postprocess.saveCSV(df=df, prefix=datasetName, path='data/')
 
 

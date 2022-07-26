@@ -17,10 +17,10 @@ def reindex(df, keep):
     df = df.set_index(TIMECOL)
     return df
 
-def saveCSV(df, prefix):
+def saveCSV(df, prefix, path):
     startDate = df.iloc[0].name.strftime('%Y-%m-%d')
     startTime = df.iloc[0].name.strftime('%X')
     endDate = df.iloc[-1].name.strftime('%Y-%m-%d')
     endTime = df.iloc[-1].name.strftime('%X')
-    name = "{} {}-{}_{}-{}({}).csv".format(prefix, startDate.replace('-',''), startTime.replace(':',''), endDate.replace('-',''), endTime.replace(':',''), str(df.shape[0]))
+    name = "{}{} {}-{}_{}-{}({}).csv".format(path, prefix, startDate.replace('-',''), startTime.replace(':',''), endDate.replace('-',''), endTime.replace(':',''), str(df.shape[0]))
     df.to_csv(name, index=False, header=True)
