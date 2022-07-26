@@ -24,14 +24,18 @@ def getDirNames(path):
             dirNameList.append(entry_name)
     return dirNameList
 
+def processCSV():
+    observations = getDirPath('data/')
+    datasets = []
+    datasetNames = []
+    for dataset in observations:
+        datasetName = dataset.split('/', 1)[1] # extract foldername from path
+        df = preprocess.generateDF(dataset)
+        df = postprocess.fixYear(df=df)
+        df = postprocess.reindex(df=df, keep=KEEP)
+        datasets.append(df)
+        datasetNames.append(datasetName)
+        postprocess.saveCSV(df=df, prefix=datasetName, path='data/')
+    return (datasets, datasetNames)
 
-observations = getDirPath('data/')
-datasets = []
-for dataset in observations:
-    datasetName = dataset.split('/', 1)[1] # extract foldername from path
-    df = preprocess.generateDF(dataset)
-    df = postprocess.fixYear(df=df)
-    df = postprocess.reindex(df=df, keep=KEEP)
-    postprocess.saveCSV(df=df, prefix=datasetName, path='data/')
-
-
+processCSV()
