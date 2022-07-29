@@ -1,0 +1,21 @@
+---  # yaml document beginning
+# This is the config.yaml file for the MTDPolicy Framework
+
+#key: value
+appname: MTDPolicy
+
+
+
+# all options:
+options:
+  WINDOWS: [30, 60, 120, 150, 180, 300, 360]
+  FUNCTIONS: ['mean', 'max', 'min']
+  infected: [1, 2, 4, 5,] # positions of the infected datasets
+  healthy: [0] # position of the healthy dataset
+
+
+# set options
+windows: [30, 60, 120, 150, 180, 300, 360] # number of datapoints of the non-overlapping windows
+infected: [0, 1, 5, 6, 7, 8, 9] # positions of the infected datasets
+healthy: [2] # position of the healthy dataset
+functions: ['mean'] # aggragation functions
