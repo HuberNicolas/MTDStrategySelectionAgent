@@ -7,3 +7,5 @@ __pycache__
 *.csv
 # Plot files
 *.png
+# Log files
+*.log
