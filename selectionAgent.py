@@ -91,10 +91,21 @@ while True:
         array.append(number)
 
 
+    malwareIndicators = {
+    'BASHLITE':0,
+    'Ransomware':0,
+    'httpbackdoor':0,
+    'jakoritarleite':0,
+    'The Tick':0,
+    'bdvl':0,
+    'beurk':0
+    }
+
     # iterate over all metrics
     for value, metric in zip(array, CAT):
 
         #print(value, metric)
+        indicator = 0 # count all indicators
 
         # is there a rule for this metric
         if metric in set(policy['metric']):
@@ -106,13 +117,16 @@ while True:
             if (rule[2] == '<=') & (float(value) <= float(rule[3])):
                 print('ALERT: we have a {}'.format(rule[0]))
                 logging.critical('{}|{}| Value: {}, Metric: {} {}: we have a {}'.format(moment[0], metric, value, rule[2], rule[3], rule[0]))
+                malwareIndicators[rule[0]] += 1
 
             if (rule[2] == '>=') & (float(value) >= float(rule[3])):
                 print('ALERT: we have a {}'.format(rule[0]))
                 logging.critical('{}|{}| Value: {}, Metric: {} {}: we have a {}'.format(moment[0], metric, value, rule[2], rule[3], rule[0]))
+                malwareIndicators[rule[0]] += 1
             else:
                 print('everything good!')
                 logging.info('{}|{}|no detection'.format(moment[0], metric))
         else:
             print('{}|{}| no rule'.format(moment[0], metric))
-    time.sleep(1)
+    print(malwareIndicators)
+    time.sleep(10)
