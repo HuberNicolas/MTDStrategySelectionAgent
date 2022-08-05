@@ -83,6 +83,8 @@ while True:
         elif 'k' in number:
             number = float(number[:-1])
             number = number * 1000
+        elif 'B' in number:
+            number = float(number[:-1])
         else:
             number = float(number)
 
