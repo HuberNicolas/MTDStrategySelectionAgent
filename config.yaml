@@ -22,9 +22,16 @@ functions: ['mean'] # aggragation functions
 
 
 # policy creation
-policy: 360
-random: True
-MAX_TH: 6
-MIN_TH: 1
-NUMBER_TH: 4
+## general
+windowSize: 360 # define the window size for which the policy should be generated
+
+## random policy creation
+seed: 10 # random seed to obtain the same policies in the random approach
+randomPolicyCreation: True # enable random policy creation
+randomNumberOfPolicyRules: True 
+maxNumberOfPolicyRules: 6
+minNumberOfPolicyRules: 1
+exactNumberOfPolicyRules: 4
+
+#
 threshholds: [1, 3, 5] 

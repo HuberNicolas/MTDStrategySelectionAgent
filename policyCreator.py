@@ -10,80 +10,62 @@ import random
 import subprocess
 import io
 import re
-# init commit for policy creation and policy refactoring
+import utils
+
+# load config
+with open('config.yaml') as stream:
+        config = yaml.safe_load(stream)
+
+# init commit for policy creation and poli
 # CONST
-SEED = 10
+SEED = config['seed']
 
 # set seed
 random.seed(SEED)
 print(random.random())
 
-CAT = [
-    'usr',
-    'sys',
-    'idl',
-    'wai',
-    'hiq',
-    'siq',
-    'used',
-    'buff',
-    'cache',
-    'free',
-    'files',
-    'inodes',
-    'read',
-    'writ',
-    'reads',
-    'writs',
-    'recv',
-    'send',
-    'lis',
-    'act',
-    'syn',
-    'tim',
-    'clo',
-    'int',
-    'csw',
-    'run',
-    'blk',
-    'new',
-]
-
-COLS = ['malware', 'metric', 'sign', 'threshold']
-
+POLICYCOLUMNS = utils.POLICYCOLUMNS
 
 def createPolicy():
-    with open('config.yaml') as stream:
-        config = yaml.safe_load(stream)
 
-    file = [i for i in glob.glob('./*.csv') if str(config['policy']) in i]
-
-    thresholds = pd.read_csv(file[0], header = None)
-    thresholds.columns = COLS
-    th = thresholds.groupby(['malware'])
-
-    #print(th.get_group('httpbackdoor'))
-
+    # load the csv with windowSize
+    filenames = [file for file in glob.glob('./*.csv') if str(config['windowSize']) in file]
+    csvPolicy = pd.read_csv(filenames[0], header = None)
+    
+    # postprocess: set header and group by malwaretype
+    csvPolicy.columns = POLICYCOLUMNS
+    #print(malwareGroup.get_group('httpbackdoor')) # DEBUG
+    malwareGroup = csvPolicy.groupby(['malware'])
+   
+    # policy creation
     policy = pd.DataFrame()
-    for malware in th:
-        if config['random'] == True:
-            # malware is a tuple: (name, df)
-            rows = malware[1].shape[0]
-
-            # define random number between MIN_TH and MAX_TH
-            random.seed(SEED)
-            nRules = random.choice([config['MIN_TH'], config['MAX_TH']])
-            while(rows < nRules):
+    
+    # random policy policy creation
+    # iterate over all malware groups and add some (random or defined) rules (row) for each malware type
+    if config['randomPolicyCreation'] == True:
+        for malware in malwareGroup:     
+            
+            # random number of rules
+            if config['randomNumberOfPolicyRules'] == True:
+                # malware is a tuple: (name, df)
+                rows = malware[1].shape[0]
+                # define random number between min/max number of policy rules
                 random.seed(SEED)
-                nRules = random.choice([config['MIN_TH'], config['MAX_TH']])
+                nRules = random.choice([config['minNumberOfPolicyRules'], config['maxNumberOfPolicyRules']])
+                while(rows < nRules):
+                    nRules -= 1
+            
+            # add defined amount of rules  
+            else:
+                nRules = config['exactNumberOfPolicyRules']
+            
+            #print(malware[1].sample(n = nRules)) # DEBGUG
+            # add defined rules to policy
+            policy = policy.append(malware[1].sample(n = nRules, random_state=SEED)) #todo check what happens if nRules > n when set
+    else:
+        print('expert based')
 
-        else:
-            nRules = config['NUMBER_TH']
-            print('false')
-        #print(malware[1].sample(n = nRules))
-        policy = policy.append(malware[1].sample(n = nRules, random_state=SEED))
-
-    #print(policy)
+    # postprocessing
     policy['metric'] = policy['metric'].str.replace('-mean', '')
     policy = policy.drop_duplicates(subset=['metric']) # todo FIX THIS
     policy.to_csv('policy.csv', index=False)
