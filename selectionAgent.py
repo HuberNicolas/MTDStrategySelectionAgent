@@ -1,4 +1,5 @@
 import glob
+import ipaddress
 from multiprocessing import pool
 import os
 import pandas as pd
@@ -12,6 +13,8 @@ import io
 import re
 import policyCreator
 import time
+import socket
+import sys
 
 CAT = [
     'usr',
@@ -44,6 +47,16 @@ CAT = [
     'new',
 ]
 
+malwareType = {
+    'BASHLITE':'Rootkit',
+    'Ransomware':'Ransomware',
+    'httpbackdoor':'CnC',
+    'jakoritarleite':'CnC',
+    'The Tick':'CnC',
+    'bdvl':'Rootkit',
+    'beurk':'Rootkit'
+    }
+
 COLS = ['malware', 'metric', 'sign', 'threshold']
 with open('config.yaml') as stream:
     config = yaml.safe_load(stream)
@@ -63,13 +76,11 @@ logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s
 while True:
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
     log = result.stdout
-
+    
     # preprocessing to extract numbers
     start = int(log.find('new'))
     log2=  log[start+3+15:-1]
     print(result.stdout)
-    
-    
 
     # extract all numbers
     numbers = re.findall('[0-9.]+[a-zA-Z]|[0-9.]+', log2)
@@ -105,7 +116,6 @@ while True:
     for value, metric in zip(array, CAT):
 
         #print(value, metric)
-        indicator = 0 # count all indicators
 
         # is there a rule for this metric
         if metric in set(policy['metric']):
@@ -129,4 +139,31 @@ while True:
         else:
             print('{}|{}| no rule'.format(moment[0], metric))
     print(malwareIndicators)
-    time.sleep(10)
+    predicted = max(malwareIndicators, key=malwareIndicators.get)
+    print(predicted)
+    predictedType = malwareType[predicted]
+    print(predictedType)
+    predictedType = random.choice(list(malwareType.values())) # to test
+    print(predictedType)
+    # predictedType = 'Ransomware'
+    hostname=socket.gethostname()   
+    IPAddr=socket.gethostbyname(hostname)
+    print(hostname, IPAddr)
+
+    ipFinder = ['hostname', '-I']
+    ipAddress = run(ipFinder, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    IP = ipAddress.stdout
+    IP = IP.rstrip('\n')
+    print(IP)
+
+    # todo insert localhost address
+    trigger = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(IP, predictedType)
+    print(trigger)
+    #os.system(trigger)
+
+    #proc = subprocess.run([trigger])
+    pol = subprocess.call(trigger.split())
+    time.sleep(30)
+
+
+
