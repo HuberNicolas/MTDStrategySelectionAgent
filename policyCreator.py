@@ -11,6 +11,13 @@ import subprocess
 import io
 import re
 
+# CONST
+SEED = 10
+
+# set seed
+random.seed(SEED)
+print(random.random())
+
 CAT = [
     'usr',
     'sys',
@@ -62,15 +69,19 @@ def createPolicy():
         if config['random'] == True:
             # malware is a tuple: (name, df)
             rows = malware[1].shape[0]
+
+            # define random number between MIN_TH and MAX_TH
+            random.seed(SEED)
             nRules = random.choice([config['MIN_TH'], config['MAX_TH']])
             while(rows < nRules):
+                random.seed(SEED)
                 nRules = random.choice([config['MIN_TH'], config['MAX_TH']])
 
         else:
             nRules = config['NUMBER_TH']
             print('false')
         #print(malware[1].sample(n = nRules))
-        policy = policy.append(malware[1].sample(n = nRules))
+        policy = policy.append(malware[1].sample(n = nRules, random_state=SEED))
 
     #print(policy)
     policy['metric'] = policy['metric'].str.replace('-mean', '')
