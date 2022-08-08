@@ -33,5 +33,7 @@ maxNumberOfPolicyRules: 6
 minNumberOfPolicyRules: 1
 exactNumberOfPolicyRules: 4
 
+completePolicyCreation: False # enable complete policy creation
+
 #
 threshholds: [1, 3, 5] 

@@ -62,6 +62,9 @@ def createPolicy():
             #print(malware[1].sample(n = nRules)) # DEBGUG
             # add defined rules to policy
             policy = policy.append(malware[1].sample(n = nRules, random_state=SEED)) #todo check what happens if nRules > n when set
+    elif config['completePolicyCreation'] == True: # if this is true, comment drop_duplicates.
+        print('complete policy creation')
+        policy = csvPolicy
     else:
         print('expert based')
 
