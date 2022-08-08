@@ -64,11 +64,17 @@ COLS = ['malware', 'metric', 'sign', 'threshold']
 POLICYCOLUMNS = ['malware', 'metric', 'sign', 'threshold']
 
 MALWARETYPES = {
-    'BASHLITE':'Rootkit',
+    'BASHLITE':'CnC',
     'Ransomware':'Ransomware',
-    'httpbackdoor':'Ransomware', # change to CnC
-    'jakoritarleite':'Ransomware', # change to CnC
-    'The Tick':'Ransomware', # change to CnC
+    'httpbackdoor':'CnC', # change to CnC
+    'jakoritarleite':'CnC', # change to CnC
+    'The Tick':'CnC', # change to CnC
     'bdvl':'Rootkit',
     'beurk':'Rootkit'
     }
+
+DECISION = {
+    'CnC':0,
+    'Ransomware':0,
+    'Rootkit':0
+}
