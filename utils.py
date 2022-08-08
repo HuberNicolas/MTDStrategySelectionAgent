@@ -73,7 +73,7 @@ MALWARETYPES = {
     'beurk':'Rootkit'
     }
 
-DECISION = {
+CLASSIFIER = {
     'CnC':0,
     'Ransomware':0,
     'Rootkit':0

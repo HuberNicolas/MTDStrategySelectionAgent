@@ -27,13 +27,13 @@ windowSize: 360 # define the window size for which the policy should be generate
 
 ## random policy creation
 seed: 10 # random seed to obtain the same policies in the random approach
-randomPolicyCreation: True # enable random policy creation
+randomPolicyCreation: False # enable random policy creation
 randomNumberOfPolicyRules: True 
 maxNumberOfPolicyRules: 6
 minNumberOfPolicyRules: 1
 exactNumberOfPolicyRules: 4
 
-completePolicyCreation: False # enable complete policy creation
+completePolicyCreation: True # enable complete policy creation
 
 #
 threshholds: [1, 3, 5] 
