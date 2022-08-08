@@ -1,4 +1,5 @@
 # IMPORTS
+import utils
 import pandas as pd
 import numpy as np
 import yaml
@@ -12,46 +13,19 @@ from subprocess import PIPE, run
 # CONST
 INTERVAL = 60
 
-METRICSNAME = [
-    'usr',
-    'sys',
-    'idl',
-    'wai',
-    'hiq',
-    'siq',
-    'used',
-    'buff',
-    'cache',
-    'free',
-    'files',
-    'inodes',
-    'read',
-    'writ',
-    'reads',
-    'writs',
-    'recv',
-    'send',
-    'lis',
-    'act',
-    'syn',
-    'tim',
-    'clo',
-    'int',
-    'csw',
-    'run',
-    'blk',
-    'new',
-]
+METRICSNAME = utils.METRICS
+MALWARETYPES = utils.MALWARETYPES
 
-MALWARETYPES = {
-    'BASHLITE':'Rootkit',
-    'Ransomware':'Ransomware',
-    'httpbackdoor':'Ransomware', # change to CnC
-    'jakoritarleite':'Ransomware', # change to CnC
-    'The Tick':'Ransomware', # change to CnC
-    'bdvl':'Rootkit',
-    'beurk':'Rootkit'
-    }
+formatter = logging.Formatter('%(levelname)s - %(message)s')
+def setup_logger(name, log_file, level=logging.INFO):
+    handler = logging.FileHandler(log_file)        
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
 
 # init config
 with open('config.yaml') as stream:
@@ -61,7 +35,9 @@ with open('config.yaml') as stream:
 policy = policyCreator.createPolicy()
 
 # init logging
-logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
+#logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
+observer = setup_logger('observer', 'observer.log')
+deployer = setup_logger('deployer', 'deployer.log')
 
 # dstat command
 dstatCommand = ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '1']
@@ -123,23 +99,23 @@ while True:
             # falling below critical treshold as indicator
             if (rule[2] == '<=') & (float(value) <= float(rule[3])):
                 print('ALERT: Possible {}'.format(rule[0]))
-                logging.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(timestamp, metric, value, rule[2], rule[3], rule[0]))
+                observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(timestamp, metric, value, rule[2], rule[3], rule[0]))
                 malwareIndicators[rule[0]] += 1
 
             # exceed critical threshold as indicator
             if (rule[2] == '>=') & (float(value) >= float(rule[3])):
                 print('ALERT: Possible {}'.format(rule[0]))
-                logging.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(timestamp, metric, value, rule[2], rule[3], rule[0]))
+                observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(timestamp, metric, value, rule[2], rule[3], rule[0]))
                 malwareIndicators[rule[0]] += 1 
             
             else:
                 print('{}|{}| no detection'.format(timestamp, metric))
-                logging.info('{}|{}|no detection'.format(timestamp, metric))
+                observer.info('{}|{}|no detection'.format(timestamp, metric))
         
         # no rule found for this metric
         else:
             print('{}|{}| no rule'.format(timestamp, metric))
-            logging.info('{}|{}|no rule'.format(timestamp, metric))
+            observer.info('{}|{}|no rule'.format(timestamp, metric))
         
 
     # determine malware type
@@ -149,7 +125,7 @@ while True:
 
     # create and execute MTDDeployment command
     triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(IP, predictedType)
-    logging.critical('{}|Deyploying against {}: {}'.format(timestamp, predictedType, triggerMTDCommand))
+    deployer.critical('{}|Deyploying against {}: {}'.format(timestamp, predictedType, triggerMTDCommand))
     subprocess.call(triggerMTDCommand.split())
     
     # wait since sockets seems to have difficulties with to many requests 
