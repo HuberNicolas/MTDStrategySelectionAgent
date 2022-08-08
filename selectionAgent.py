@@ -82,7 +82,7 @@ while True:
     start = int(observedMetrics.find('new'))
     observedMetricsProcessed =  observedMetrics[start+3+15:-1]
     metricsNumbers = re.findall('[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed) # extract array of all numbers like 123.32, 1.4B, 34 34K
-    timestamp = re.findall('[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetricsProcessed)[0] # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
+    timestamp = re.findall('[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetrics)[0] # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
     
     # postprocess to array with no postfixes (M, k and B for units)
     systemMetrics = []
