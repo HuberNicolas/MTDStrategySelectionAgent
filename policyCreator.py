@@ -19,12 +19,11 @@ with open('config.yaml') as stream:
 # init commit for policy creation and poli
 # CONST
 SEED = config['seed']
+POLICYCOLUMNS = utils.POLICYCOLUMNS
 
 # set seed
 random.seed(SEED)
 print(random.random())
-
-POLICYCOLUMNS = utils.POLICYCOLUMNS
 
 def createPolicy():
 
@@ -55,22 +54,28 @@ def createPolicy():
                 while(rows < nRules):
                     nRules -= 1
             
-            # add defined amount of rules  
+            # defined number of rules
             else:
                 nRules = config['exactNumberOfPolicyRules']
             
             #print(malware[1].sample(n = nRules)) # DEBGUG
             # add defined rules to policy
             policy = policy.append(malware[1].sample(n = nRules, random_state=SEED)) #todo check what happens if nRules > n when set
-    elif config['completePolicyCreation'] == True: # if this is true, comment drop_duplicates.
-        print('complete policy creation')
+            policy = policy.drop_duplicates(subset=['metric'])
+    
+    # complete policy policy creation
+    # iterate over all malware groups and all rules (row) for each malware type
+    elif config['completePolicyCreation'] == True:
         policy = csvPolicy
+    
+    # random policy policy creation
     else:
-        print('expert based')
+        pass
+        # to be done
+        
 
     # postprocessing
     policy['metric'] = policy['metric'].str.replace('-mean', '')
-    #policy = policy.drop_duplicates(subset=['metric']) # todo FIX THIS
     policy.to_csv('policy.csv', index=False)
     return policy
 
@@ -97,3 +102,5 @@ def factors(policy):
     # count total occurences of all malware types
     totalOccurences = sum(malwareOccurrences)
     return [malwareTypeOcc, totalOccurences, np.divide(malwareOccurrences, totalOccurences)]
+
+createPolicy()
