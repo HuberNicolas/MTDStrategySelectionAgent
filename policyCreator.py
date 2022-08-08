@@ -70,6 +70,30 @@ def createPolicy():
 
     # postprocessing
     policy['metric'] = policy['metric'].str.replace('-mean', '')
-    policy = policy.drop_duplicates(subset=['metric']) # todo FIX THIS
+    #policy = policy.drop_duplicates(subset=['metric']) # todo FIX THIS
     policy.to_csv('policy.csv', index=False)
     return policy
+
+
+def factors(policy):
+
+    # classify each malware by type and add type column
+    bd = ['httpbackdoor', 'BASHLITE', 'backdoor',  'jakoritarleite', 'The Tick']
+    rk = ['beurk', 'bdvl']
+    rw = ['Ransomware']
+    conditions = [
+        (policy['malware'].isin(bd)),
+        (policy['malware'].isin(rk)),
+        (policy['malware'].isin(rw))
+    ]
+    values = ['CnC', 'Rootkit', 'Ransomware']
+    policy['malwaretype'] = np.select(conditions, values)
+    
+    # count different malware types and create a dict
+    malwareTypes = policy['malwaretype'].value_counts().index.tolist()
+    malwareOccurrences = policy['malwaretype'].value_counts().values.tolist()
+    malwareTypeOcc = {malwareTypes[i]: malwareOccurrences[i] for i in range(len(malwareTypes))}
+    
+    # count total occurences of all malware types
+    totalOccurences = sum(malwareOccurrences)
+    return [malwareTypeOcc, totalOccurences, np.divide(malwareOccurrences, totalOccurences)]

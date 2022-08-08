@@ -35,6 +35,12 @@ with open('config.yaml') as stream:
 
 # load policy
 policy = policyCreator.createPolicy()
+histogram = policyCreator.factors(policy)
+malwareOccurences = histogram[0]
+malwareOccurencesSum = histogram[1]
+
+# init a classifier dict
+classifier = utils.CLASSIFIER
 
 # init logging
 #logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
@@ -42,7 +48,7 @@ observer = setup_logger('observer', 'observer.log')
 deployer = setup_logger('deployer', 'deployer.log')
 
 # dstat command
-dstatCommand = ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '1']
+dstatCommand = ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '1'] 
 
 # MTD policy selection loop
 while True:        
@@ -57,11 +63,10 @@ while True:
     observedMetrics = dstatOut.stdout
     
     # preprocessing to metrics
-    start = int(observedMetrics.find('new'))
+    start = int(observedMetrics.find('new')) # maybe use 2nd line insead of first
     observedMetricsProcessed =  observedMetrics[start+3+15:-1]
     metricsNumbers = re.findall('[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed) # extract array of all numbers like 123.32, 1.4B, 34 34K
     timestamp = re.findall('[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetrics)[0] # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
-    
     # postprocess to array with no postfixes (M, k and B for units)
     systemMetrics = []
     for number in metricsNumbers:
@@ -116,19 +121,26 @@ while True:
             print('{}|{}| no detection'.format(timestamp, metric), end= ' ')
             observer.info('{}|{}|no detection'.format(timestamp, metric))
         print('\n')
-    
 
-    decision = utils.DECISION
+    # fill malware Indicator dict
+    classifier = dict.fromkeys(classifier, 0) # set all to 0
     for malwareIndicator in malwareIndicators.keys():
-        decision[MALWARETYPES[malwareIndicator]] += malwareIndicators[malwareIndicator]
-        
-    predictedType = max(decision, key=decision.get)
+        classifier[MALWARETYPES[malwareIndicator]] += malwareIndicators[malwareIndicator]
 
-    
+    # scale number of occurences according to histogram    
+    indicatorResult = ''
+    for key in malwareOccurences:
+        malwareRatio = malwareOccurences[key] / malwareOccurencesSum
+        classifier[key] /= malwareRatio
+        indicatorResult += '{}: {:.2f} '.format(key,classifier[key])
+ 
+    # predict
+    predictedType = max(classifier, key=classifier.get)  # todo: insert confidence band (e.g., over 95%)
+
     # create and execute MTDDeployment command
     triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(IP, predictedType)
-    deployer.critical('{}|Deyploying against {}: {}'.format(timestamp, predictedType, triggerMTDCommand))
-    subprocess.call(triggerMTDCommand.split())
+    deployer.critical('{}|Deyploying against {}: {} | {}'.format(timestamp, predictedType, triggerMTDCommand, indicatorResult))
+    #subprocess.call(triggerMTDCommand.split())
     
     # wait since sockets seems to have difficulties with to many requests 
     time.sleep(INTERVAL)
