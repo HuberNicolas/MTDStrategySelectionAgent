@@ -128,22 +128,20 @@ while True:
         for index, rule in policy.iterrows():
             if metricName == rule['metric']:
                 # print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
-
+                found = True
                 # falling below critical treshold as indicator
                 if (rule[2] == '<=') & (float(metricNumber) <= float(rule[3])):
                     print('ALERT: Possible {}'.format(rule[0]), end=' ')
                     observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
                     malwareIndicators[rule[0]] += 1
-                    found = True
-
+                
                 # exceed critical threshold as indicator
                 if (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
                     print('ALERT: Possible {}'.format(rule[0]), end=' ')
                     observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
                     malwareIndicators[rule[0]] += 1
-                    found = True
                 else:
                     malwareIndicatorsNegative[rule[0]] += 1
 
