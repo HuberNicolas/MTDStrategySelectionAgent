@@ -1,23 +1,25 @@
 import glob
-from multiprocessing import pool
-import os
 import pandas as pd
 import numpy as np
-import shutil
-import csv
 import yaml
 import random
-import subprocess
-import io
-import re
 import utils
 
 # load config
 with open('config.yaml') as stream:
         config = yaml.safe_load(stream)
 
-# init commit for policy creation and poli
-# CONST
+windowSize = config['windowSize']
+randomPolicyCreation = config['randomPolicyCreation']
+randomNumberOfPolicyRules = config['randomNumberOfPolicyRules']
+minNumberOfPolicyRules = config['minNumberOfPolicyRules']
+maxNumberOfPolicyRules = config['maxNumberOfPolicyRules']
+exactNumberOfPolicyRules = config['exactNumberOfPolicyRules']
+completePolicyCreation = config['completePolicyCreation']
+expertPolicyCreation = config['expertPolicyCreation']
+aggregateFunctions = config['aggregateFunctions'] # avg, min, max
+
+AGGREGATEFUNCTION = aggregateFunctions[0]
 SEED = config['seed']
 POLICYCOLUMNS = utils.POLICYCOLUMNS
 
@@ -28,7 +30,7 @@ print(random.random())
 def createPolicy():
 
     # load the csv with windowSize
-    filenames = [file for file in glob.glob('./*.csv') if str(config['windowSize']) in file]
+    filenames = [file for file in glob.glob('./*.csv') if 'policy({}).csv'.format(windowSize) in file]
     csvPolicy = pd.read_csv(filenames[0], header = None)
     
     # postprocess: set header and group by malwaretype
@@ -39,44 +41,58 @@ def createPolicy():
     # policy creation
     policy = pd.DataFrame()
     
-    # random policy policy creation
+    # random policy creation
     # iterate over all malware groups and add some (random or defined) rules (row) for each malware type
-    if config['randomPolicyCreation'] == True:
+    if randomPolicyCreation == True:
+        method = 'random'
+        if randomNumberOfPolicyRules == True:
+            method += '({}-{})'.format(minNumberOfPolicyRules, maxNumberOfPolicyRules)
+        else:
+            method += '({})'.format(exactNumberOfPolicyRules)
+
         for malware in malwareGroup:     
+            # malware is a tuple: (name, df)
+            rows = malware[1].shape[0] # number of rows for that malware type
             
             # random number of rules
-            if config['randomNumberOfPolicyRules'] == True:
-                # malware is a tuple: (name, df)
-                rows = malware[1].shape[0]
+            if randomNumberOfPolicyRules == True:
+                
                 # define random number between min/max number of policy rules
                 random.seed(SEED)
-                nRules = random.choice([config['minNumberOfPolicyRules'], config['maxNumberOfPolicyRules']])
-                while(rows < nRules):
-                    nRules -= 1
-            
+                nRules = random.choice([minNumberOfPolicyRules, maxNumberOfPolicyRules])
+                
             # defined number of rules
             else:
-                nRules = config['exactNumberOfPolicyRules']
+                nRules = exactNumberOfPolicyRules
+            
+            # make sure we don't have more rules than rows
+            while(rows < nRules): 
+                    nRules -= 1    
+                
             
             #print(malware[1].sample(n = nRules)) # DEBGUG
             # add defined rules to policy
             policy = policy.append(malware[1].sample(n = nRules, random_state=SEED)) #todo check what happens if nRules > n when set
             policy = policy.drop_duplicates(subset=['metric'])
     
-    # complete policy policy creation
+    # complete policy creation
     # iterate over all malware groups and all rules (row) for each malware type
-    elif config['completePolicyCreation'] == True:
+    elif completePolicyCreation == True:
+        method = 'complete'
         policy = csvPolicy
     
-    # random policy policy creation
-    else:
+    # expert policy creation
+    elif expertPolicyCreation == True:
+        method = 'expert'
         pass
         # to be done
         
 
     # postprocessing
-    policy['metric'] = policy['metric'].str.replace('-mean', '')
-    policy.to_csv('policy.csv', index=False)
+    policy['metric'] = policy['metric'].str.replace('-{}'.format(AGGREGATEFUNCTION), '') # remove aggregate function string for all rows
+    policyName = 'policy({})-{}-{}'.format(windowSize, AGGREGATEFUNCTION, method)
+    policy.to_csv('{}.csv'.format(policyName), index=False)
+    
     return policy
 
 
@@ -102,5 +118,3 @@ def factors(policy):
     # count total occurences of all malware types
     totalOccurences = sum(malwareOccurrences)
     return [malwareTypeOcc, totalOccurences, np.divide(malwareOccurrences, totalOccurences)]
-
-createPolicy()
