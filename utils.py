@@ -71,17 +71,17 @@ COLS = ['malware', 'metric', 'sign', 'threshold']
 
 
 MALWARETYPES = {
-    'BASHLITE':'CnC',
-    'Ransomware':'Ransomware',
-    'httpbackdoor':'CnC', # change to CnC
-    'jakoritarleite':'CnC', # change to CnC
-    'The Tick':'CnC', # change to CnC
-    'bdvl':'Rootkit',
-    'beurk':'Rootkit'
-    }
+    'BASHLITE': 'CnC',
+    'Ransomware': 'Ransomware',
+    'httpbackdoor': 'CnC',  # change to CnC
+    'jakoritarleite': 'CnC',  # change to CnC
+    'The Tick': 'CnC',  # change to CnC
+    'bdvl': 'Rootkit',
+    'beurk': 'Rootkit'
+}
 
 CLASSIFIER = {
-    'CnC':0,
-    'Ransomware':0,
-    'Rootkit':0
+    'CnC': 0,
+    'Ransomware': 0,
+    'Rootkit': 0
 }
