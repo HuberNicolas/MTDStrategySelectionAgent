@@ -61,7 +61,7 @@ METRICS = [
     'siq',
     'used',
     'buff',
-    'cache',
+    'cach',
     'free',
     'files',
     'inodes',
