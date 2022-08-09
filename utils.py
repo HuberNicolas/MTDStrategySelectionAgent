@@ -5,6 +5,22 @@ ROOTKIT = ['beurk', 'bdvl']
 RANSOMWARE = ['Ransomware']
 MALWARECATEGORIES = ['CnC', 'Rootkit', 'Ransomware']
 
+malwareIndicatorTable = {
+        'BASHLITE': 0,
+        'Ransomware': 0,
+        'httpbackdoor': 0,
+        'jakoritarleite': 0,
+        'The Tick': 0,
+        'bdvl': 0,
+        'beurk': 0
+    }
+
+malwareTypeIndicatorTable = {
+    'CnC': 0,
+    'Ransomware': 0,
+    'Rootkit': 0
+}
+
 CAT = [
     'usr',
     'sys',
@@ -73,15 +89,9 @@ COLS = ['malware', 'metric', 'sign', 'threshold']
 MALWARETYPES = {
     'BASHLITE': 'CnC',
     'Ransomware': 'Ransomware',
-    'httpbackdoor': 'CnC',  # change to CnC
-    'jakoritarleite': 'CnC',  # change to CnC
-    'The Tick': 'CnC',  # change to CnC
+    'httpbackdoor': 'CnC',
+    'jakoritarleite': 'CnC',
+    'The Tick': 'CnC',
     'bdvl': 'Rootkit',
     'beurk': 'Rootkit'
-}
-
-CLASSIFIER = {
-    'CnC': 0,
-    'Ransomware': 0,
-    'Rootkit': 0
 }
