@@ -96,19 +96,20 @@ def createPolicy():
     return policy
 
 
-def factors(policy):
-
-    # classify each malware by type and add type column
-    bd = ['httpbackdoor', 'BASHLITE', 'backdoor',  'jakoritarleite', 'The Tick']
-    rk = ['beurk', 'bdvl']
-    rw = ['Ransomware']
+def malwareDistribution(policy):
+    # init
+    CNCMALWARE = utils.CNC
+    RKMALWALRE = utils.ROOTKIT
+    RWMALWARE = utils.RANSOMWARE
+    MALWARECATEGORIES = utils.MALWARECATEGORIES
+    
     conditions = [
-        (policy['malware'].isin(bd)),
-        (policy['malware'].isin(rk)),
-        (policy['malware'].isin(rw))
+        (policy['malware'].isin(CNCMALWARE)),
+        (policy['malware'].isin(RKMALWALRE)),
+        (policy['malware'].isin(RWMALWARE))
     ]
-    values = ['CnC', 'Rootkit', 'Ransomware']
-    policy['malwaretype'] = np.select(conditions, values)
+    # classify each malware by type and add type column
+    policy['malwaretype'] = np.select(conditions, MALWARECATEGORIES)
     
     # count different malware types and create a dict
     malwareTypes = policy['malwaretype'].value_counts().index.tolist()
@@ -117,4 +118,14 @@ def factors(policy):
     
     # count total occurences of all malware types
     totalOccurences = sum(malwareOccurrences)
+    '''
+    malwareTypeOcc: {
+        'Rootkit': 3
+        'CnC': 7
+        'Ransomware: 3
+    }
+    totalOccurences: 13
+    array([0.53846154, 0.23076923, 0.23076923])
+    '''
+    
     return [malwareTypeOcc, totalOccurences, np.divide(malwareOccurrences, totalOccurences)]

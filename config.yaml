@@ -24,8 +24,8 @@ functions: ['mean'] # aggragation functions
 # policy creation
 ## general
 windowSize: 360 # define the window size for which the policy should be generated
+aggregateFunctions: ['mean', 'min', 'max']
 
-## random policy creation
 seed: 10 # random seed to obtain the same policies in the random approach
 randomPolicyCreation: True # enable random policy creation
 randomNumberOfPolicyRules: True 
@@ -36,7 +36,6 @@ exactNumberOfPolicyRules: 4
 completePolicyCreation: False # enable complete policy creation
 
 expertPolicyCreation: False
-aggregateFunctions: ['mean', 'min', 'max']
 
 #
 threshholds: [1, 3, 5] 
