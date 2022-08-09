@@ -1,3 +1,5 @@
+POLICYCOLUMNS = ['malware', 'metric', 'sign', 'threshold']
+
 CAT = [
     'usr',
     'sys',
@@ -61,7 +63,7 @@ METRICS = [
 ]
 
 COLS = ['malware', 'metric', 'sign', 'threshold']
-POLICYCOLUMNS = ['malware', 'metric', 'sign', 'threshold']
+
 
 MALWARETYPES = {
     'BASHLITE':'CnC',
