@@ -46,5 +46,5 @@ countMalwareIndicators: False
 countMalwareTypeIndicators: False
 countMalwareIndicatorsRelatively: True
 
-dstatCommand: ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '1']
+dstatCommand: ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '2']
 ipFinderCommand: ['hostname', '-I']

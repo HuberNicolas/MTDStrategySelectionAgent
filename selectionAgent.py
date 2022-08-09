@@ -99,17 +99,17 @@ while True:
     dstatOut = run(dstatCommand, stdout=PIPE,
                    stderr=PIPE, universal_newlines=True)
     observedMetrics = dstatOut.stdout
-
     # process to metrics array with clean numbers
-    # todo: maybe use 2nd line insead of first
-    start = int(observedMetrics.find('new'))
-    observedMetricsProcessed = observedMetrics[start+3+15:-1]
-    # extract array of all numbers like 123.32, 1.4B, 34 34K
-    metricsNumbers = re.findall(
-        '[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed)
+    # extract 2nd line
+    observedMetricsProcessed = observedMetrics.splitlines()[-1]
+
     # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
     timestamp = re.findall(
-        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetrics)[0]
+        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetricsProcessed)[0]
+    # extract array of all numbers like 123.32, 1.4B, 34 34K
+    metricsNumbers = re.findall(
+        '[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed[len(timestamp):])
+
     # postprocess to array with no postfixes (M, k and B for units)
     systemMetricValues = makeNumerical(metricsNumbersArray=metricsNumbers)
 
@@ -119,7 +119,6 @@ while True:
     malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
 
     malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
-
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
         print(metricName, end=' ')
@@ -135,7 +134,7 @@ while True:
                     observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
                     malwareIndicators[rule[0]] += 1
-                
+
                 # exceed critical threshold as indicator
                 if (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
                     print('ALERT: Possible {}'.format(rule[0]), end=' ')
