@@ -1,5 +1,10 @@
 POLICYCOLUMNS = ['malware', 'metric', 'sign', 'threshold']
 
+CNC = ['httpbackdoor', 'BASHLITE', 'backdoor',  'jakoritarleite', 'The Tick']
+ROOTKIT = ['beurk', 'bdvl']
+RANSOMWARE = ['Ransomware']
+MALWARECATEGORIES = ['CnC', 'Rootkit', 'Ransomware']
+
 CAT = [
     'usr',
     'sys',

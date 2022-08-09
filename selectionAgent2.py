@@ -35,7 +35,7 @@ with open('config.yaml') as stream:
 
 # load policy
 policy = policyCreator.createPolicy()
-histogram = policyCreator.factors(policy)
+histogram = policyCreator.malwareDistribution(policy)
 malwareOccurences = histogram[0]
 malwareOccurencesSum = histogram[1]
 
