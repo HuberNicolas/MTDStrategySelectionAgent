@@ -1,16 +1,16 @@
 POLICYCOLUMNS = ['malware', 'metric', 'sign', 'threshold']
 
-CNC = ['httpbackdoor', 'BASHLITE', 'backdoor',  'jakoritarleite', 'The Tick']
+CNC = ['httpbackdoor', 'BASHLITE', 'backdoor', 'thetick']
 ROOTKIT = ['beurk', 'bdvl']
-RANSOMWARE = ['Ransomware']
+RANSOMWARE = ['Ransomware-PoC']
 MALWARECATEGORIES = ['CnC', 'Rootkit', 'Ransomware']
 
 malwareIndicatorTable = {
         'BASHLITE': 0,
-        'Ransomware': 0,
+        'Ransomware-PoC': 0,
         'httpbackdoor': 0,
-        'jakoritarleite': 0,
-        'The Tick': 0,
+        'backdoor': 0,
+        'thetick': 0,
         'bdvl': 0,
         'beurk': 0
     }
@@ -20,37 +20,6 @@ malwareTypeIndicatorTable = {
     'Ransomware': 0,
     'Rootkit': 0
 }
-
-CAT = [
-    'usr',
-    'sys',
-    'idl',
-    'wai',
-    'hiq',
-    'siq',
-    'used',
-    'buff',
-    'cache',
-    'free',
-    'files',
-    'inodes',
-    'read',
-    'writ',
-    'reads',
-    'writs',
-    'recv',
-    'send',
-    'lis',
-    'act',
-    'syn',
-    'tim',
-    'clo',
-    'int',
-    'csw',
-    'run',
-    'blk',
-    'new',
-]
 
 METRICS = [
     'usr',
@@ -88,10 +57,10 @@ COLS = ['malware', 'metric', 'sign', 'threshold']
 
 MALWARETYPES = {
     'BASHLITE': 'CnC',
-    'Ransomware': 'Ransomware',
+    'Ransomware-PoC': 'Ransomware', # adjust
     'httpbackdoor': 'CnC',
-    'jakoritarleite': 'CnC',
-    'The Tick': 'CnC',
+    'backdoor': 'CnC',
+    'thetick': 'CnC',
     'bdvl': 'Rootkit',
     'beurk': 'Rootkit'
 }
