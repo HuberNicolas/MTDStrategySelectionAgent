@@ -19,9 +19,9 @@ sudo apt-get install dstat
 '
 cd /root/MTDPolicy/data/csv/
 
-iterations=60
+iterations=1
 delay=1
-observations=30
+observations=1800
 for ((i = 0 ; i < $iterations ; i++)); do
     now=`date +%F-%H-%M-%S`
     suffix="-log.csv"
