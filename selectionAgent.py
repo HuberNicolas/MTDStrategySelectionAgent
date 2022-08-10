@@ -224,7 +224,7 @@ while True:
             IP, predictedType)
         deployer.critical('{}|Deyploying against {}: {} |{}'.format(
             timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
-        # subprocess.call(triggerMTDCommand.split())
+        subprocess.call(triggerMTDCommand.split())
 
     else:
         deployer.info('{}|No deployment against {}: No command was sent |{}'.format(
