@@ -52,12 +52,9 @@ METRICS = [
     'new',
 ]
 
-COLS = ['malware', 'metric', 'sign', 'threshold']
-
-
 MALWARETYPES = {
     'BASHLITE': 'CnC',
-    'Ransomware-PoC': 'Ransomware', # adjust
+    'Ransomware-PoC': 'Ransomware',
     'httpbackdoor': 'CnC',
     'backdoor': 'CnC',
     'thetick': 'CnC',
