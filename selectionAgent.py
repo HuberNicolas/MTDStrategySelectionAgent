@@ -1,4 +1,6 @@
 # IMPORTS
+from os import system
+import utils
 import pandas as pd
 import numpy as np
 import yaml
@@ -9,82 +11,29 @@ import time
 import logging
 from subprocess import PIPE, run
 
-# CONST
-INTERVAL = 60
+# FUNCTIONS
 
-METRICSNAME = [
-    'usr',
-    'sys',
-    'idl',
-    'wai',
-    'hiq',
-    'siq',
-    'used',
-    'buff',
-    'cache',
-    'free',
-    'files',
-    'inodes',
-    'read',
-    'writ',
-    'reads',
-    'writs',
-    'recv',
-    'send',
-    'lis',
-    'act',
-    'syn',
-    'tim',
-    'clo',
-    'int',
-    'csw',
-    'run',
-    'blk',
-    'new',
-]
 
-MALWARETYPES = {
-    'BASHLITE':'Rootkit',
-    'Ransomware':'Ransomware',
-    'httpbackdoor':'Ransomware', # change to CnC
-    'jakoritarleite':'Ransomware', # change to CnC
-    'The Tick':'Ransomware', # change to CnC
-    'bdvl':'Rootkit',
-    'beurk':'Rootkit'
-    }
+def setupLogger(name, log_file, level=logging.INFO):
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(formatter)
 
-# init config
-with open('config.yaml') as stream:
-    config = yaml.safe_load(stream)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
 
-# load policy
-policy = policyCreator.createPolicy()
+    return logger
 
-# init logging
-logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
 
-# dstat command
-dstatCommand = ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '1']
-
-# MTD policy selection loop
-while True:        
-    # determine IP
-    ipFinder = ['hostname', '-I']
-    ipAddress = run(ipFinder, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    IP = ipAddress.stdout # todo fix mulitple IPs
+def getIP():
+    ipAddress = run(ipFinderCommand, stdout=PIPE, stderr=PIPE,
+                    universal_newlines=True)
+    IP = ipAddress.stdout  # todo fix mulitple IPs
     IP = IP.rstrip('\n')
+    return IP
 
-    # https://stackoverflow.com/questions/1996518/retrieving-the-output-of-subprocess-call
-    dstatOut = run(dstatCommand, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    observedMetrics = dstatOut.stdout
-    
-    # preprocessing to metrics
-    start = int(observedMetrics.find('new'))
-    observedMetricsProcessed =  observedMetrics[start+3+15:-1]
-    metricsNumbers = re.findall('[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed) # extract array of all numbers like 123.32, 1.4B, 34 34K
-    timestamp = re.findall('[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetricsProcessed)[0] # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
-    
-    # postprocess to array with no postfixes (M, k and B for units)
+
+def removeUnits(metricsNumbersArray):
     systemMetrics = []
     for number in metricsNumbers:
         if 'M' in number:
@@ -100,57 +49,186 @@ while True:
 
         systemMetrics.append(number)
 
-    # initialize an empty malware indicator table
-    malwareIndicators = {
-    'BASHLITE':0,
-    'Ransomware':0,
-    'httpbackdoor':0,
-    'jakoritarleite':0,
-    'The Tick':0,
-    'bdvl':0,
-    'beurk':0
-    }
+    return systemMetrics
 
-    # iterate over all metrics
-    for value, metric in zip(systemMetrics, METRICSNAME):
 
-        # rule found for this metric
-        if metric in set(policy['metric']):
-            # load the rule
-            rule = policy[policy['metric'].str.contains(metric)].values[0] # todo: what if we have multiple rules?
-            print('{}|{}| Value: {}, Metric: {} {:.2f}:'.format(timestamp, metric, value, rule[2], rule[3]), end=' ') # end such that we do not print on newline
-
-            # falling below critical treshold as indicator
-            if (rule[2] == '<=') & (float(value) <= float(rule[3])):
-                print('ALERT: Possible {}'.format(rule[0]))
-                logging.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(timestamp, metric, value, rule[2], rule[3], rule[0]))
-                malwareIndicators[rule[0]] += 1
-
-            # exceed critical threshold as indicator
-            if (rule[2] == '>=') & (float(value) >= float(rule[3])):
-                print('ALERT: Possible {}'.format(rule[0]))
-                logging.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(timestamp, metric, value, rule[2], rule[3], rule[0]))
-                malwareIndicators[rule[0]] += 1 
-            
-            else:
-                print('{}|{}| no detection'.format(timestamp, metric))
-                logging.info('{}|{}|no detection'.format(timestamp, metric))
-        
-        # no rule found for this metric
+def normalize(malwareIndicators):
+    malwareIndicatorsScaled = dict(malwareIndicators)  # copy by value
+    for malware in malwareIndicatorsScaled:
+        if malware == 'Ransomware':
+            malwareIndicatorsScaled[malware] *= 4
+        elif malware == 'beurk' or malware == 'bdvl':
+            malwareIndicatorsScaled[malware] *= 2
         else:
-            print('{}|{}| no rule'.format(timestamp, metric))
-            logging.info('{}|{}|no rule'.format(timestamp, metric))
-        
+            pass
+    return malwareIndicatorsScaled
 
-    # determine malware type
-    predicted = max(malwareIndicators, key=malwareIndicators.get) # find max value in malware indicator table; todo insert more logic
-    predictedType = MALWARETYPES[predicted] # determine type of malware with the most indicators
-    # predictedType = random.choice(list(malwareType.values())) # debug only
 
-    # create and execute MTDDeployment command
-    triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(IP, predictedType)
-    logging.critical('{}|Deyploying against {}: {}'.format(timestamp, predictedType, triggerMTDCommand))
-    subprocess.call(triggerMTDCommand.split())
-    
-    # wait since sockets seems to have difficulties with to many requests 
+def countMalwareType(malwareIndicators, malwareTypeIndicators):
+    for malwareIndicator in malwareIndicators.keys():
+        malwareTypeIndicators[MALWARETYPES[malwareIndicator]
+                              ] += malwareIndicators[malwareIndicator]
+    return malwareTypeIndicators
+
+
+def relativeMalwareOccurence(malwareIndicatorsRelative, malwareIndicatorsPositive, malwareIndicatorsNegative):
+    for malwareType in malwareIndicatorsRelative:
+        sumPosNegIndicators = (
+            malwareIndicatorsPositive[malwareType] + malwareIndicatorsNegative[malwareType])
+        if sumPosNegIndicators != 0:
+            malwareIndicatorsRelative[malwareType] = malwareIndicatorsPositive[malwareType] / \
+                sumPosNegIndicators
+        else:
+            malwareIndicatorsRelative[malwareType] = 0
+    return malwareIndicatorsRelative
+
+
+# CONST
+METRICSNAME = utils.METRICS
+MALWARETYPES = utils.MALWARETYPES
+
+# INIT CONFIG
+with open('config.yaml') as stream:
+    config = yaml.safe_load(stream)
+
+INTERVAL = config['interval']
+countMalwareIndicators = config['countMalwareIndicators']
+countMalwareTypeIndicators = config['countMalwareTypeIndicators']
+countMalwareIndicatorsRelatively = config['countMalwareIndicatorsRelatively']
+ipFinderCommand = config['ipFinderCommand']
+dstatCommand = config['dstatCommand']
+MODE = config['mode'][0]
+
+# Init empty malware indicator tables
+malwareIndicators = utils.malwareIndicatorTable
+malwareIndicatorsScaled = utils.malwareIndicatorTable
+malwareIndicatorsNegative = utils.malwareIndicatorTable
+malwareIndicatorsRelative = utils.malwareIndicatorTable
+malwareIndicatorsRelativeScaled = utils.malwareIndicatorTable
+
+# Init an empty malware type indicator table
+malwareTypeIndicators = utils.malwareTypeIndicatorTable
+
+
+# INIT LOGGING
+formatter = logging.Formatter('%(levelname)s - %(message)s')
+#logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
+observer = setupLogger('observer', 'observer.log')
+deployer = setupLogger('deployer', 'deployer.log')
+
+
+# INIT POLICY
+policy = policyCreator.createPolicy()
+malwareDistribution = policyCreator.malwareDistribution(policy)
+malwareOccurences = malwareDistribution[0]  # malwareTypeOcc
+malwareOccurencesSum = malwareDistribution[1]  # totalOccurences
+
+# MTD policy selection loop
+while True:
+    # determine IP
+    IP = getIP()
+
+    # start observation and collect system metrics
+    # https://stackoverflow.com/questions/1996518/retrieving-the-output-of-subprocess-call
+    dstatOut = run(dstatCommand, stdout=PIPE,
+                   stderr=PIPE, universal_newlines=True)
+    observedMetrics = dstatOut.stdout
+    # process to metrics array with clean numbers
+    # extract 2nd line
+    observedMetricsProcessed = observedMetrics.splitlines()[-1]
+
+    # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
+    timestamp = re.findall(
+        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetricsProcessed)[0]
+    # extract array of all numbers like 123.32, 1.4B, 34 34K
+    metricsNumbers = re.findall(
+        '[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed[len(timestamp):])
+
+    # postprocess to array with no postfixes (M, k and B for units)
+    systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
+
+    # set all inidcator table to 0
+    malwareIndicators = dict.fromkeys(malwareIndicators, 0)
+    malwareIndicatorsNegative = dict.fromkeys(malwareIndicatorsNegative, 0)
+    malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
+
+    malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
+    # iterate over all captures values (value, metricName)
+    for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
+        print('{}|'.format(metricName), end=' ')
+        # compare to all existings policy rules
+        found = False
+        for index, rule in policy.iterrows():
+            if metricName == rule['metric']:
+                # print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
+                found = True
+                # falling below critical treshold as indicator
+                if (rule[2] == '<=') & (float(metricNumber) <= float(rule[3])):
+                    malwareIndicators[rule[0]] += 1
+                    print('ALERT: Possible {} (+({}) -({}))'.format(
+                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
+                        timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
+
+                # exceed critical threshold as indicator
+                if (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
+                    malwareIndicators[rule[0]] += 1
+                    print('ALERT: Possible {} (+({}) -({}))'.format(
+                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
+                        timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
+
+                else:
+                    malwareIndicatorsNegative[rule[0]] += 1
+                    print('No detection for {} (+({}) -({}))'.format(
+                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    observer.info('{}|{}|No detection for this metric: ({})'.format(
+                        timestamp, metricName, rule[0]))
+
+        if not found:
+            print('No rule', end=' ')
+            observer.info('{}|{}|No rule'.format(timestamp, metricName))
+        print('\n')
+
+    # normalize
+    malwareIndicatorsScaled = normalize(malwareIndicators)
+
+    # sum over groups
+    malwareTypeIndicators = countMalwareType(
+        malwareIndicators, malwareTypeIndicators)
+
+    # relative detection
+    malwareIndicatorsRelative = relativeMalwareOccurence(
+        malwareIndicatorsRelative, malwareIndicators, malwareIndicatorsNegative)
+    malwareIndicatorsRelativeScaled = relativeMalwareOccurence(
+        malwareIndicatorsRelativeScaled, malwareIndicatorsScaled, malwareIndicatorsNegative)
+
+    # prediction based on max value of malware
+    predicted = max(malwareIndicatorsRelativeScaled,
+                    key=malwareIndicatorsRelativeScaled.get)
+    predictedPercentage = max(malwareIndicatorsRelativeScaled.values())
+    predictedType = MALWARETYPES[predicted]
+
+    # list detection values descending
+    detectionHiearachy = sorted(
+        list(malwareIndicatorsRelativeScaled.items()), key=lambda x: x[1], reverse=True)
+    detectionHiearachyStr = ''
+    for detectionRate in detectionHiearachy:
+        detectionHiearachyStr += '{} ({}): {:.2f}; '.format(
+            detectionRate[0], MALWARETYPES[detectionRate[0]], detectionRate[1])
+
+    # check threshold
+    if(predictedPercentage > MODE['detectionTreshold']):
+        # create and execute MTDDeployment command
+        triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
+            IP, predictedType)
+        deployer.critical('{}|Deyploying against {}: {} |{}'.format(
+            timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
+        # subprocess.call(triggerMTDCommand.split())
+
+    else:
+        deployer.info('{}|No deployment against {}: No command was sent |{}'.format(
+            timestamp, predictedType, detectionHiearachyStr))
+
+    # wait since sockets seems to have difficulties with to many requests
     time.sleep(INTERVAL)
