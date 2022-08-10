@@ -52,6 +52,37 @@ def removeUnits(metricsNumbersArray):
     return systemMetrics
 
 
+def normalize(malwareIndicators):
+    malwareIndicatorsScaled = dict(malwareIndicators)  # copy by value
+    for malware in malwareIndicatorsScaled:
+        if malware == 'Ransomware':
+            malwareIndicatorsScaled[malware] *= 4
+        elif malware == 'beurk' or malware == 'bdvl':
+            malwareIndicatorsScaled[malware] *= 2
+        else:
+            pass
+    return malwareIndicatorsScaled
+
+
+def countMalwareType(malwareIndicators, malwareTypeIndicators):
+    for malwareIndicator in malwareIndicators.keys():
+        malwareTypeIndicators[MALWARETYPES[malwareIndicator]
+                              ] += malwareIndicators[malwareIndicator]
+    return malwareTypeIndicators
+
+
+def relativeMalwareOccurence(malwareIndicatorsRelative, malwareIndicatorsPositive, malwareIndicatorsNegative):
+    for malwareType in malwareIndicatorsRelative:
+        sumPosNegIndicators = (
+            malwareIndicatorsPositive[malwareType] + malwareIndicatorsNegative[malwareType])
+        if sumPosNegIndicators != 0:
+            malwareIndicatorsRelative[malwareType] = malwareIndicatorsPositive[malwareType] / \
+                sumPosNegIndicators
+        else:
+            malwareIndicatorsRelative[malwareType] = 0
+    return malwareIndicatorsRelative
+
+
 # CONST
 METRICSNAME = utils.METRICS
 MALWARETYPES = utils.MALWARETYPES
@@ -66,11 +97,14 @@ countMalwareTypeIndicators = config['countMalwareTypeIndicators']
 countMalwareIndicatorsRelatively = config['countMalwareIndicatorsRelatively']
 ipFinderCommand = config['ipFinderCommand']
 dstatCommand = config['dstatCommand']
+MODE = config['mode'][0]
 
 # Init empty malware indicator tables
 malwareIndicators = utils.malwareIndicatorTable
+malwareIndicatorsScaled = utils.malwareIndicatorTable
 malwareIndicatorsNegative = utils.malwareIndicatorTable
 malwareIndicatorsRelative = utils.malwareIndicatorTable
+malwareIndicatorsRelativeScaled = utils.malwareIndicatorTable
 
 # Init an empty malware type indicator table
 malwareTypeIndicators = utils.malwareTypeIndicatorTable
@@ -130,84 +164,71 @@ while True:
                 found = True
                 # falling below critical treshold as indicator
                 if (rule[2] == '<=') & (float(metricNumber) <= float(rule[3])):
-                    print('ALERT: Possible {}'.format(rule[0]), end=' ')
-                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(
-                        timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
                     malwareIndicators[rule[0]] += 1
+                    print('ALERT: Possible {} (+({}) -({}))'.format(
+                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
+                        timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
 
                 # exceed critical threshold as indicator
                 if (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
-                    print('ALERT: Possible {}'.format(rule[0]), end=' ')
-                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: Possible {}'.format(
-                        timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
                     malwareIndicators[rule[0]] += 1
+                    print('ALERT: Possible {} (+({}) -({}))'.format(
+                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
+                        timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
+
                 else:
                     malwareIndicatorsNegative[rule[0]] += 1
-                    print('no detection for {}'.format(rule[0]), end=' ')
-                    observer.info('{}|{}|no detection for this metric'.format(timestamp, metricName))
+                    print('No detection for {} (+({}) -({}))'.format(
+                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    observer.info('{}|{}|No detection for this metric: ({})'.format(
+                        timestamp, metricName, rule[0]))
 
         if not found:
-            print('no rule', end=' ')
-            observer.info('{}|{}|no rule'.format(timestamp, metricName))
+            print('No rule', end=' ')
+            observer.info('{}|{}|No rule'.format(timestamp, metricName))
         print('\n')
-   
-    # predict malware or malware type
-    indicatorResult = ''
-    if countMalwareIndicators == True:
-        # determine malware
-        # find max value in malware indicator table
-        predicted = max(malwareIndicators, key=malwareIndicators.get)
-        # determine type of malware with the most indicators
-        predictedType = MALWARETYPES[predicted]
-        indicatorResult += '{}-({}): {}'.format(predicted,
-                                                MALWARETYPES[predicted], malwareIndicators[predicted])
 
-    elif countMalwareTypeIndicators == True:
-        malwareTypeIndicators = dict.fromkeys(
-            malwareTypeIndicators, 0)  # set all to 0
-        # determine malware type
-        # fill malwareTypeIndicatorTable dict
-        for malwareIndicator in malwareIndicators.keys():
-            malwareTypeIndicators[MALWARETYPES[malwareIndicator]
-                                  ] += malwareIndicators[malwareIndicator]
+    # normalize
+    malwareIndicatorsScaled = normalize(malwareIndicators)
 
-        # scale number of occurences according to histogram
-        for malwareType in malwareOccurences:
-            malwareRatio = malwareOccurences[malwareType] / \
-                malwareOccurencesSum
-            malwareTypeIndicators[malwareType] /= malwareRatio
-            indicatorResult += '{}: {:.2f} '.format(
-                malwareType, malwareTypeIndicators[malwareType])
+    # sum over groups
+    malwareTypeIndicators = countMalwareType(
+        malwareIndicators, malwareTypeIndicators)
 
-        # predict
-        # todo: insert confidence band (e.g., over 95%)
-        predictedType = max(malwareTypeIndicators,
-                            key=malwareTypeIndicators.get)
+    # relative detection
+    malwareIndicatorsRelative = relativeMalwareOccurence(
+        malwareIndicatorsRelative, malwareIndicators, malwareIndicatorsNegative)
+    malwareIndicatorsRelativeScaled = relativeMalwareOccurence(
+        malwareIndicatorsRelativeScaled, malwareIndicatorsScaled, malwareIndicatorsNegative)
 
-    elif countMalwareIndicatorsRelatively == True:
-        # determine malware
-        for malwareType in malwareIndicatorsRelative:
-            sumPosNegIndicators = (
-                malwareIndicators[malwareType] + malwareIndicatorsNegative[malwareType])
-            if sumPosNegIndicators != 0:
-                malwareIndicatorsRelative[malwareType] = malwareIndicators[malwareType] / \
-                    sumPosNegIndicators
-            else:
-                malwareIndicatorsRelative[malwareType] = 0
+    # prediction based on max value of malware
+    predicted = max(malwareIndicatorsRelativeScaled,
+                    key=malwareIndicatorsRelativeScaled.get)
+    predictedPercentage = max(malwareIndicatorsRelativeScaled.values())
+    predictedType = MALWARETYPES[predicted]
 
-            indicatorResult += '{}-({}): {:.2f} '.format(
-                malwareType, MALWARETYPES[malwareType], malwareIndicatorsRelative[malwareType])
-        # predict
-        # todo: insert confidence band (e.g., over 95%)
-        predictedType = max(malwareIndicatorsRelative,
-                            key=malwareIndicatorsRelative.get)
+    # list detection values descending
+    detectionHiearachy = sorted(
+        list(malwareIndicatorsRelativeScaled.items()), key=lambda x: x[1], reverse=True)
+    detectionHiearachyStr = ''
+    for detectionRate in detectionHiearachy:
+        detectionHiearachyStr += '{} ({}): {:.2f}; '.format(
+            detectionRate[0], MALWARETYPES[detectionRate[0]], detectionRate[1])
 
-    # create and execute MTDDeployment command
-    triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
-        IP, predictedType)
-    deployer.critical('{}|Deyploying against {}: {} | {}'.format(
-        timestamp, predictedType, triggerMTDCommand, indicatorResult))
-    # subprocess.call(triggerMTDCommand.split())
+    # check threshold
+    if(predictedPercentage > MODE['detectionTreshold']):
+        # create and execute MTDDeployment command
+        triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
+            IP, predictedType)
+        deployer.critical('{}|Deyploying against {}: {} |{}'.format(
+            timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
+        # subprocess.call(triggerMTDCommand.split())
+
+    else:
+        deployer.info('{}|No deployment against {}: No command was sent |{}'.format(
+            timestamp, predictedType, detectionHiearachyStr))
 
     # wait since sockets seems to have difficulties with to many requests
     time.sleep(INTERVAL)

@@ -45,6 +45,21 @@ interval: 60
 countMalwareIndicators: False
 countMalwareTypeIndicators: False
 countMalwareIndicatorsRelatively: True
+modes:
+- name: sensitive
+  letter: S
+  detectionTreshold: 0.05
+- name: average
+  letter: A
+  detectionTreshold: 0.05
+- name: robust
+  letter: R
+  detectionTreshold: 0.80
+mode:
+- name: robust
+  letter: R
+  detectionTreshold: 0.80
+
 
 dstatCommand: ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '2']
 ipFinderCommand: ['hostname', '-I']
