@@ -14,7 +14,7 @@ from subprocess import PIPE, run
 # FUNCTIONS
 
 
-def setup_logger(name, log_file, level=logging.INFO):
+def setupLogger(name, log_file, level=logging.INFO):
     handler = logging.FileHandler(log_file)
     handler.setFormatter(formatter)
 
@@ -33,7 +33,7 @@ def getIP():
     return IP
 
 
-def makeNumerical(metricsNumbersArray):
+def removeUnits(metricsNumbersArray):
     systemMetrics = []
     for number in metricsNumbers:
         if 'M' in number:
@@ -79,8 +79,8 @@ malwareTypeIndicators = utils.malwareTypeIndicatorTable
 # INIT LOGGING
 formatter = logging.Formatter('%(levelname)s - %(message)s')
 #logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
-observer = setup_logger('observer', 'observer.log')
-deployer = setup_logger('deployer', 'deployer.log')
+observer = setupLogger('observer', 'observer.log')
+deployer = setupLogger('deployer', 'deployer.log')
 
 
 # INIT POLICY
@@ -111,7 +111,7 @@ while True:
         '[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed[len(timestamp):])
 
     # postprocess to array with no postfixes (M, k and B for units)
-    systemMetricValues = makeNumerical(metricsNumbersArray=metricsNumbers)
+    systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
 
     # set all inidcator table to 0
     malwareIndicators = dict.fromkeys(malwareIndicators, 0)
@@ -121,7 +121,7 @@ while True:
     malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
-        print(metricName, end=' ')
+        print('{}|'.format(metricName), end=' ')
         # compare to all existings policy rules
         found = False
         for index, rule in policy.iterrows():
@@ -143,12 +143,14 @@ while True:
                     malwareIndicators[rule[0]] += 1
                 else:
                     malwareIndicatorsNegative[rule[0]] += 1
+                    print('no detection for {}'.format(rule[0]), end=' ')
+                    observer.info('{}|{}|no detection for this metric'.format(timestamp, metricName))
 
         if not found:
-            print('{}|{}| no detection'.format(timestamp, metricName), end=' ')
-            observer.info('{}|{}|no detection'.format(timestamp, metricName))
+            print('no rule', end=' ')
+            observer.info('{}|{}|no rule'.format(timestamp, metricName))
         print('\n')
-
+   
     # predict malware or malware type
     indicatorResult = ''
     if countMalwareIndicators == True:
