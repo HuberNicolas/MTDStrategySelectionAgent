@@ -12,6 +12,7 @@ def remove_line(fileName,lineToSkip):
     with open(fileName,'w') as write_file:
         for line in lines:
             if currentLine == lineToSkip:
+                print(line)
                 pass
             else:
                 write_file.write(line)
@@ -21,11 +22,13 @@ def remove_line(fileName,lineToSkip):
 # call the function, passing the file and line to skip
 #remove_line('2022-07-26-10-20-20-log.csv', firstline)
 
-
+os.chdir('data/')
 folders = os.listdir()
 print(os.listdir())
 for folder in folders:
     files = glob.glob('{}/*.csv'.format(folder))
     if len(files) != 0:
         for file in files:
+            print('removed line {} in file {}: '.format(firstline, file), end=' ')
             remove_line(file, firstline)
+            
