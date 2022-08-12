@@ -116,13 +116,15 @@ formatter = logging.Formatter('%(levelname)s - %(message)s')
 observer = setupLogger('observer', 'observer.log')
 deployer = setupLogger('deployer', 'deployer.log')
 
+indicator = {
+    'Ransomware': [0,0],
+    'Rootkit': [0,0],
+    'CnC': [0,0],
+}
 
 # INIT POLICY
-policy = policyCreator.createPolicy()
-malwareDistribution = policyCreator.malwareDistribution(policy)
-malwareOccurences = malwareDistribution[0]  # malwareTypeOcc
-malwareOccurencesSum = malwareDistribution[1]  # totalOccurences
-
+policy = csvPolicy = pd.read_csv('expert-based-policy.csv', header=None)
+policy.columns = utils.POLICYCOLUMNS
 # MTD policy selection loop
 while True:
     # determine IP
@@ -147,49 +149,41 @@ while True:
     # postprocess to array with no postfixes (M, k and B for units)
     systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
 
-    # set all inidcator table to 0
-    malwareIndicators = dict.fromkeys(malwareIndicators, 0)
-    malwareIndicatorsNegative = dict.fromkeys(malwareIndicatorsNegative, 0)
-    malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
-
-    malwareIndicatorsRelative = dict.fromkeys(malwareIndicatorsRelative, 0)
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
         print('{}|'.format(metricName), end=' ')
         # compare to all existings policy rules
         found = False
+        
         for index, rule in policy.iterrows():
             if metricName == rule['metric']:
-                # print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
+                # DEBUG print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
                 found = True
                 # falling below critical treshold as indicator
                 if (rule[2] == '<=') & (float(metricNumber) <= float(rule[3])):
-                    malwareIndicators[rule[0]] += 1
-                    print('ALERT: Possible {} (+({}) -({}))'.format(
-                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    indicator[rule[0]][0] += 1
                     observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
 
                 # exceed critical threshold as indicator
                 elif (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
-                    malwareIndicators[rule[0]] += 1
-                    print('ALERT: Possible {} (+({}) -({}))'.format(
-                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    indicator[rule[0]][0] += 1
                     observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
 
+
                 else:
-                    malwareIndicatorsNegative[rule[0]] += 1
-                    print('No detection for {} (+({}) -({}))'.format(
-                        rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
+                    indicator[rule[0]][1] += 1
                     observer.info('{}|{}|No detection for this metric: ({})'.format(
-                        timestamp, metricName, rule[0]))
+                         timestamp, metricName, rule[0]))
+                   
 
         if not found:
             print('No rule', end=' ')
             observer.info('{}|{}|No rule'.format(timestamp, metricName))
         print('\n')
-
+    print(indicator)
+    quit()
     # normalize
     malwareIndicatorsScaled = normalize(malwareIndicators)
 
