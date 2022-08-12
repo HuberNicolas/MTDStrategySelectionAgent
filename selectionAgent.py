@@ -11,6 +11,7 @@ import time
 import logging
 from subprocess import PIPE, run
 
+
 # FUNCTIONS
 
 
@@ -52,37 +53,6 @@ def removeUnits(metricsNumbersArray):
     return systemMetrics
 
 
-def normalize(malwareIndicators):
-    malwareIndicatorsScaled = dict(malwareIndicators)  # copy by value
-    for malware in malwareIndicatorsScaled:
-        if malware == 'Ransomware':
-            malwareIndicatorsScaled[malware] *= 4
-        elif malware == 'beurk' or malware == 'bdvl':
-            malwareIndicatorsScaled[malware] *= 2
-        else:
-            pass
-    return malwareIndicatorsScaled
-
-
-def countMalwareType(malwareIndicators, malwareTypeIndicators):
-    for malwareIndicator in malwareIndicators.keys():
-        malwareTypeIndicators[MALWARETYPES[malwareIndicator]
-                              ] += malwareIndicators[malwareIndicator]
-    return malwareTypeIndicators
-
-
-def relativeMalwareOccurence(malwareIndicatorsRelative, malwareIndicatorsPositive, malwareIndicatorsNegative):
-    for malwareType in malwareIndicatorsRelative:
-        sumPosNegIndicators = (
-            malwareIndicatorsPositive[malwareType] + malwareIndicatorsNegative[malwareType])
-        if sumPosNegIndicators != 0:
-            malwareIndicatorsRelative[malwareType] = malwareIndicatorsPositive[malwareType] / \
-                sumPosNegIndicators
-        else:
-            malwareIndicatorsRelative[malwareType] = 0
-    return malwareIndicatorsRelative
-
-
 # CONST
 METRICSNAME = utils.METRICS
 MALWARETYPES = utils.MALWARETYPES
@@ -99,17 +69,6 @@ ipFinderCommand = config['ipFinderCommand']
 dstatCommand = config['dstatCommand']
 MODE = config['mode'][0]
 
-# Init empty malware indicator tables
-malwareIndicators = utils.malwareIndicatorTable
-malwareIndicatorsScaled = utils.malwareIndicatorTable
-malwareIndicatorsNegative = utils.malwareIndicatorTable
-malwareIndicatorsRelative = utils.malwareIndicatorTable
-malwareIndicatorsRelativeScaled = utils.malwareIndicatorTable
-
-# Init an empty malware type indicator table
-malwareTypeIndicators = utils.malwareTypeIndicatorTable
-
-
 # INIT LOGGING
 formatter = logging.Formatter('%(levelname)s - %(message)s')
 #logging.basicConfig(filename='observer.log', filemode='w', format='%(levelname)s - %(message)s', level=logging.INFO)
@@ -117,10 +76,19 @@ observer = setupLogger('observer', 'observer.log')
 deployer = setupLogger('deployer', 'deployer.log')
 
 indicator = {
-    'Ransomware': [0,0],
-    'Rootkit': [0,0],
-    'CnC': [0,0],
+    'Ransomware': [0, 0, 0],
+    'Rootkit': [0, 0, 0],
+    'CnC': [0, 0, 0],
 }
+
+
+def indicatorRatio(indicator):
+    for k, v in indicator.items():
+        if v[1] == 0:
+            v[2] = 1
+        else:
+            v[2] = v[0] / (v[0] + v[1])
+
 
 # INIT POLICY
 policy = csvPolicy = pd.read_csv('expert-based-policy.csv', header=None)
@@ -151,10 +119,8 @@ while True:
 
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
-        print('{}|'.format(metricName), end=' ')
         # compare to all existings policy rules
         found = False
-        
         for index, rule in policy.iterrows():
             if metricName == rule['metric']:
                 # DEBUG print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
@@ -171,54 +137,32 @@ while True:
                     observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
 
-
                 else:
                     indicator[rule[0]][1] += 1
                     observer.info('{}|{}|No detection for this metric: ({})'.format(
-                         timestamp, metricName, rule[0]))
-                   
+                        timestamp, metricName, rule[0]))
 
         if not found:
-            print('No rule', end=' ')
             observer.info('{}|{}|No rule'.format(timestamp, metricName))
-        print('\n')
-    print(indicator)
-    quit()
-    # normalize
-    malwareIndicatorsScaled = normalize(malwareIndicators)
 
-    # sum over groups
-    malwareTypeIndicators = countMalwareType(
-        malwareIndicators, malwareTypeIndicators)
-
-    # relative detection
-    malwareIndicatorsRelative = relativeMalwareOccurence(
-        malwareIndicatorsRelative, malwareIndicators, malwareIndicatorsNegative)
-    malwareIndicatorsRelativeScaled = relativeMalwareOccurence(
-        malwareIndicatorsRelativeScaled, malwareIndicatorsScaled, malwareIndicatorsNegative)
-
-    # prediction based on max value of malware
-    predicted = max(malwareIndicatorsRelativeScaled,
-                    key=malwareIndicatorsRelativeScaled.get)
-    predictedPercentage = max(malwareIndicatorsRelativeScaled.values())
-    predictedType = MALWARETYPES[predicted]
-
-    # list detection values descending
+    indicatorRatio(indicator)
     detectionHiearachy = sorted(
-        list(malwareIndicatorsRelativeScaled.items()), key=lambda x: x[1], reverse=True)
-    detectionHiearachyStr = ''
-    for detectionRate in detectionHiearachy:
-        detectionHiearachyStr += '{} ({}): {:.2f}; '.format(
-            detectionRate[0], MALWARETYPES[detectionRate[0]], detectionRate[1])
+        indicator.items(), key=lambda i: i[1][2], reverse=True)
+    predictedType = detectionHiearachy[0][0]
+    predictedPercentage = detectionHiearachy[0][1][2]
+    resultStr = ''
+    for malwareType in detectionHiearachy:
+        resultStr += '{}:({:.2f}), '.format(malwareType[0], malwareType[1][2])
+    detectionHiearachyStr = resultStr[:-2]
 
     # check threshold
-    if(predictedPercentage > MODE['detectionTreshold']):
+    if (predictedPercentage > MODE['detectionTreshold']):
         # create and execute MTDDeployment command
         triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
             IP, predictedType)
         deployer.critical('{}|Deyploying against {}: {} |{}'.format(
             timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
-        subprocess.call(triggerMTDCommand.split())
+        # subprocess.call(triggerMTDCommand.split())
 
     else:
         deployer.info('{}|No deployment against {}: No command was sent |{}'.format(
