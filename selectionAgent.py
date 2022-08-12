@@ -90,6 +90,8 @@ def indicatorRatio(indicator):
             v[2] = v[0] / (v[0] + v[1])
 
 
+lastDeployment = None
+startTime = time.time()
 # INIT POLICY
 policy = csvPolicy = pd.read_csv('expert-based-policy.csv', header=None)
 policy.columns = utils.POLICYCOLUMNS
@@ -160,13 +162,24 @@ while True:
         # create and execute MTDDeployment command
         triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
             IP, predictedType)
-        deployer.critical('{}|Deyploying against {}: {} |{}'.format(
-            timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
-        # subprocess.call(triggerMTDCommand.split())
+
+        executionTime = time.time() - startTime
+        print(int(executionTime))
+        if lastDeployment == None or (executionTime > 60 + lastDeployment):
+            print("deployment")
+            deployer.critical('{}|Deyploying against {}: {} |{}'.format(
+                timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
+            # wait since sockets seems to have difficulties with to many requests
+            # subprocess.call(triggerMTDCommand.split())
+
+            time.sleep(1)
+            lastDeployment = time.time() - startTime
+        else:
+            print("no-deployment")
+            deployer.critical('{}|TIMOUT (NO DEPLOYMENT): Detected {}: {} |{}'.format(
+                timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
 
     else:
+        print("no-deployment (no rule)")
         deployer.info('{}|No deployment against {}: No command was sent |{}'.format(
             timestamp, predictedType, detectionHiearachyStr))
-
-    # wait since sockets seems to have difficulties with to many requests
-    time.sleep(INTERVAL)
