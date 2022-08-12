@@ -171,7 +171,7 @@ while True:
                         timestamp, metricName, metricNumber, rule[2], rule[3], rule[0]))
 
                 # exceed critical threshold as indicator
-                if (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
+                elif (rule[2] == '>=') & (float(metricNumber) >= float(rule[3])):
                     malwareIndicators[rule[0]] += 1
                     print('ALERT: Possible {} (+({}) -({}))'.format(
                         rule[0], malwareIndicators[rule[0]], malwareIndicatorsNegative[rule[0]]), end=' ')
