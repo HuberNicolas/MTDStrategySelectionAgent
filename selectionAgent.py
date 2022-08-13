@@ -108,6 +108,36 @@ while True:
     # process to metrics array with clean numbers
     # extract 2nd line
     observedMetricsProcessed = observedMetrics.splitlines()[-1]
+    history = []
+    print(observedMetrics)
+    print('\n')
+    for i in range(-1, -6, -1):
+        history.append(observedMetrics.splitlines()[i])
+
+    history.reverse()
+    avgHistory = []
+    for h in history:
+        print(h)
+        timestamp = re.findall(
+        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', h)[0]
+        metricsNumbers = re.findall(
+        '[0-9.]+[a-zA-Z]|[0-9.]+', h[len(timestamp):])
+        systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
+        print('{}:{}'.format(timestamp, metricsNumbers))
+        print('{}:{}'.format(timestamp, systemMetricValues))
+        avgHistory.append(systemMetricValues)
+        print('\n')
+
+    print('avg history')
+    print(avgHistory)
+    # avg
+    print('np array')
+    data = np.array(avgHistory)
+    print(data)
+    
+    print('avg')
+    print(np.average(data, axis=0))
+    quit()
 
     # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
     timestamp = re.findall(
@@ -115,10 +145,12 @@ while True:
     # extract array of all numbers like 123.32, 1.4B, 34 34K
     metricsNumbers = re.findall(
         '[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed[len(timestamp):])
+        
 
     # postprocess to array with no postfixes (M, k and B for units)
+    
     systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
-
+    quit()
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
         # compare to all existings policy rules
@@ -146,7 +178,7 @@ while True:
 
         if not found:
             observer.info('{}|{}|No rule'.format(timestamp, metricName))
-
+    quit()
     indicatorRatio(indicator)
     detectionHiearachy = sorted(
         indicator.items(), key=lambda i: i[1][2], reverse=True)
