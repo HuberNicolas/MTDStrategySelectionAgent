@@ -108,56 +108,41 @@ while True:
     # process to metrics array with clean numbers
     # extract 2nd line
     observedMetricsProcessed = observedMetrics.splitlines()[-1]
-    history = []
-    print(observedMetrics)
-    print('\n')
-    for i in range(-1, -6, -1):
-        history.append(observedMetrics.splitlines()[i])
-
-    history.reverse()
-    avgHistory = []
-    for h in history:
-        print(h)
-        timestamp = re.findall(
-        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', h)[0]
-        metricsNumbers = re.findall(
-        '[0-9.]+[a-zA-Z]|[0-9.]+', h[len(timestamp):])
-        systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
-        print('{}:{}'.format(timestamp, metricsNumbers))
-        print('{}:{}'.format(timestamp, systemMetricValues))
-        avgHistory.append(systemMetricValues)
-        print('\n')
-
-    print('avg history')
-    print(avgHistory)
-    # avg
-    print('np array')
-    data = np.array(avgHistory)
-    print(data)
-    
-    print('avg')
-    print(np.average(data, axis=0))
-    quit()
-
     # extract timestamp  [dd-mm hh:mm:ss], 01-08 15:13:48
     timestamp = re.findall(
         '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', observedMetricsProcessed)[0]
-    # extract array of all numbers like 123.32, 1.4B, 34 34K
-    metricsNumbers = re.findall(
-        '[0-9.]+[a-zA-Z]|[0-9.]+', observedMetricsProcessed[len(timestamp):])
-        
-
-    # postprocess to array with no postfixes (M, k and B for units)
     
-    systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
-    quit()
+    history = []
+    # append last 5 entries to history
+    for i in range(-1, -6, -1):
+        history.append(observedMetrics.splitlines()[i])
+
+    history.reverse() # start with the earliest timestamp
+    systemMetricValuesHistory = []
+    for h in history:
+        # extract timestamp
+        timestamp = re.findall(
+        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', h)[0]
+        # extract array of all numbers like 123.32, 1.4B, 34 34K
+        metricsNumbers = re.findall(
+        '[0-9.]+[a-zA-Z]|[0-9.]+', h[len(timestamp):])
+        # postprocess to array with no postfixes (M, k and B for units)
+        
+        systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
+        systemMetricValuesHistory.append(systemMetricValues)
+
+    
+    # calculate average for all metrics for
+    systemMetricValues = np.array(systemMetricValuesHistory)
+    avgSysteMetricValues = np.average(systemMetricValues, axis=0)
+    
     # iterate over all captures values (value, metricName)
-    for metricNumber, metricName in zip(systemMetricValues, METRICSNAME):
+    for metricNumber, metricName in zip(avgSysteMetricValues, METRICSNAME):
         # compare to all existings policy rules
         found = False
         for index, rule in policy.iterrows():
             if metricName == rule['metric']:
-                # DEBUG print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
+                print(metricName, rule['malware'], rule['metric'], metricNumber, rule['sign'], rule['threshold'])
                 found = True
                 # falling below critical treshold as indicator
                 if (rule[2] == '<=') & (float(metricNumber) <= float(rule[3])):
@@ -177,8 +162,9 @@ while True:
                         timestamp, metricName, rule[0]))
 
         if not found:
+            print('{}|{}|No rule'.format(timestamp, metricName))
             observer.info('{}|{}|No rule'.format(timestamp, metricName))
-    quit()
+    
     indicatorRatio(indicator)
     detectionHiearachy = sorted(
         indicator.items(), key=lambda i: i[1][2], reverse=True)
