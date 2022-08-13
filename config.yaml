@@ -58,8 +58,8 @@ modes:
 mode:
 - name: robust
   letter: R
-  detectionTreshold: 0.80
+  detectionTreshold: 0.60
 
 
-dstatCommand: ['dstat', '-t', '--cpu', '--mem', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '2']
+dstatCommand: ['dstat', '-t', '--cpu', '--mem', '--fs', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '2']
 ipFinderCommand: ['hostname', '-I']
