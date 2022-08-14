@@ -10,8 +10,11 @@ import policyCreator
 import time
 import logging
 from subprocess import PIPE, run
+import socket
 
-
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('0.0.0.0', 2345))
+s.listen(10)
 # FUNCTIONS
 
 
@@ -85,7 +88,7 @@ indicator = {
 def indicatorRatio(indicator):
     for k, v in indicator.items():
         if v[1] == 0:
-            v[2] = 1
+            v[2] = 0
         else:
             v[2] = v[0] / (v[0] + v[1])
 
@@ -99,6 +102,11 @@ policy.columns = utils.POLICYCOLUMNS
 while True:
     # determine IP
     IP = getIP()
+    indicator = {
+        'Ransomware': [0, 0, 0],
+        'Rootkit': [0, 0, 0],
+        'CnC': [0, 0, 0],
+    }
 
     # start observation and collect system metrics
     # https://stackoverflow.com/questions/1996518/retrieving-the-output-of-subprocess-call
@@ -114,7 +122,7 @@ while True:
     
     history = []
     # append last 5 entries to history
-    for i in range(-1, -6, -1):
+    for i in range(-1, -11, -1):
         history.append(observedMetrics.splitlines()[i])
 
     history.reverse() # start with the earliest timestamp
@@ -167,31 +175,33 @@ while True:
     
     indicatorRatio(indicator)
     detectionHiearachy = sorted(
-        indicator.items(), key=lambda i: i[1][2], reverse=True)
+        indicator.items(), key=lambda i: i[1][0], reverse=True) # [1][0]: sort by pos, [1][2]: sort by %
     predictedType = detectionHiearachy[0][0]
     predictedPercentage = detectionHiearachy[0][1][2]
     resultStr = ''
     for malwareType in detectionHiearachy:
-        resultStr += '{}:({:.2f}), '.format(malwareType[0], malwareType[1][2])
+        resultStr += '{}:({:.2f}|{:.2f}:{:.2f}), '.format(malwareType[0], malwareType[1][2], malwareType[1][0], malwareType[1][1])
     detectionHiearachyStr = resultStr[:-2]
 
     # check threshold
-    if (predictedPercentage > MODE['detectionTreshold']):
+    if (predictedPercentage >= MODE['detectionTreshold']):
         # create and execute MTDDeployment command
         triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
             IP, predictedType)
 
         executionTime = time.time() - startTime
         print(int(executionTime))
-        if lastDeployment == None or (executionTime > 60 + lastDeployment):
+        if True:
             print("deployment")
             deployer.critical('{}|Deyploying against {}: {} |{}'.format(
                 timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
             # wait since sockets seems to have difficulties with to many requests
-            # subprocess.call(triggerMTDCommand.split())
+            subprocess.call(triggerMTDCommand.split())
 
-            time.sleep(1)
+            #time.sleep(30)
             lastDeployment = time.time() - startTime
+            client_socket, address = s.accept()
+            print('Connection ' + address[0])
         else:
             print("no-deployment")
             deployer.critical('{}|TIMOUT (NO DEPLOYMENT): Detected {}: {} |{}'.format(
