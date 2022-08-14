@@ -41,24 +41,10 @@ expertPolicyCreation: False
 threshholds: [1, 3, 5]
 
 # policy selection
-interval: 60
-countMalwareIndicators: False
-countMalwareTypeIndicators: False
-countMalwareIndicatorsRelatively: True
-modes:
-- name: sensitive
-  letter: S
-  detectionTreshold: 0.05
-- name: average
-  letter: A
-  detectionTreshold: 0.05
-- name: robust
-  letter: R
-  detectionTreshold: 0.80
-mode:
-- name: robust
-  letter: R
-  detectionTreshold: 0.60
+detectionThreshold: 0.6
+evaluationMethod: 0 # 0: sort by #pos, 2: sort by %
+historyLen: 10
+responsePort: 2345
 
 
 dstatCommand: ['dstat', '-t', '--cpu', '--mem', '--fs', '-d', '--disk-tps', '-n', '--tcp', '--socket','-y', '-p', '-N', 'eth0', '1', '11']
