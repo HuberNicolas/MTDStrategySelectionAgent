@@ -61,5 +61,5 @@ mode:
   detectionTreshold: 0.60
 
 
-dstatCommand: ['dstat', '-t', '--cpu', '--mem', '--fs', '-d', '--disk-tps', '-n', '--tcp', '-y', '-p', '-N', 'eth0', '1', '11']
+dstatCommand: ['dstat', '-t', '--cpu', '--mem', '--fs', '-d', '--disk-tps', '-n', '--tcp', '--socket','-y', '-p', '-N', 'eth0', '1', '11']
 ipFinderCommand: ['hostname', '-I']
