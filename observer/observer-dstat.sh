@@ -35,9 +35,10 @@ for ((i = 0 ; i < $iterations ; i++)); do
     # -disk-tps : number of read and write transactions per device. Displays the number of read and write I/O transactions per device.
     # -n        : enable network stats (receive, send)
     # -tcp      : enable tcp stats (listen, established, syn, time_wait, close)
+    # -socket   : enable socket stats (total, tcp, udp, raw, ip-fragments)
     # -y        : enable system stats (interrupts, context switches)
     # -p        : enable process stats (runnable, uninterruptible, new)
     # -N eth0   : specifiys network on eth0
     # -ouput    : write CSV output to file
-    dstat -t --cpu --mem --fs -d --disk-tps -n --tcp -y -p -N eth0 --output $filename $delay $observations
+    dstat -t --cpu --mem --fs -d --disk-tps -n --tcp --socket -y -p -N eth0 --output $filename $delay $observations
 done
