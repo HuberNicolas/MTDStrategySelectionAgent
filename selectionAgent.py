@@ -92,14 +92,12 @@ def indicatorRatio(indicator):
         else:
             v[2] = v[0] / (v[0] + v[1])
 
-
-lastDeployment = None
-startTime = time.time()
 # INIT POLICY
 policy = csvPolicy = pd.read_csv('expert-based-policy.csv', header=None)
 policy.columns = utils.POLICYCOLUMNS
 # MTD policy selection loop
 while True:
+    startObservationTime = time.time()
     # determine IP
     IP = getIP()
     indicator = {
@@ -107,7 +105,6 @@ while True:
         'Rootkit': [0, 0, 0],
         'CnC': [0, 0, 0],
     }
-
     # start observation and collect system metrics
     # https://stackoverflow.com/questions/1996518/retrieving-the-output-of-subprocess-call
     dstatOut = run(dstatCommand, stdout=PIPE,
@@ -184,30 +181,28 @@ while True:
     detectionHiearachyStr = resultStr[:-2]
 
     # check threshold
+    endObservationTime = time.time()
+    print('Observation Time: {}s'.format(endObservationTime - startObservationTime))
+
     if (predictedPercentage >= MODE['detectionTreshold']):
         # create and execute MTDDeployment command
+        startMTDDeploymentTime = time.time()
         triggerMTDCommand = 'python3 /opt/MTDFramework/MTDDeployerClient.py --ip {}--port 1234 --attack {}'.format(
             IP, predictedType)
 
-        executionTime = time.time() - startTime
-        print(int(executionTime))
-        if True:
-            print("deployment")
-            deployer.critical('{}|Deyploying against {}: {} |{}'.format(
-                timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
-            # wait since sockets seems to have difficulties with to many requests
-            subprocess.call(triggerMTDCommand.split())
-
-            #time.sleep(30)
-            lastDeployment = time.time() - startTime
-            client_socket, address = s.accept()
-            print('Connection ' + address[0])
-        else:
-            print("no-deployment")
-            deployer.critical('{}|TIMOUT (NO DEPLOYMENT): Detected {}: {} |{}'.format(
-                timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
+        print("deployment")
+        deployer.critical('{}|Deyploying against {}: {} |{}'.format(
+            timestamp, predictedType, triggerMTDCommand, detectionHiearachyStr))
+            
+        subprocess.call(triggerMTDCommand.split())
+        # wait since sockets seems to have difficulties with to many requests
+        
+        client_socket, address = s.accept()
+        endMTDDeploymentTime = time.time()
+        print('Connection ' + address[0])
+        print('Deployment Time: {}s'.format(endMTDDeploymentTime - startMTDDeploymentTime))
 
     else:
-        print("no-deployment (no rule)")
+        print("no-deployment")
         deployer.info('{}|No deployment against {}: No command was sent |{}'.format(
             timestamp, predictedType, detectionHiearachyStr))
