@@ -129,7 +129,7 @@ def main():
 
         # append to dataframe list
         dataframes.append(df)
-    return (datasetNames, dataframes)
+    return (dataframes, datasetNames)
 
 
 if __name__ == "__main__":
