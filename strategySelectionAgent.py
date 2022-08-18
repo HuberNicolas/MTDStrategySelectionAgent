@@ -1,9 +1,7 @@
 # IMPORTS
-from os import getcwd, system
 import pandas as pd
 import numpy as np
 import yaml
-import subprocess
 import re
 import time
 import logging
@@ -26,7 +24,7 @@ def setupLogger(name, log_file, level=logging.INFO):
 
 
 def getIP():
-    ipAddress = run(ipFinderCommand, stdout=PIPE, stderr=PIPE,
+    ipAddress = run(IPFINDERCOMMAND, stdout=PIPE, stderr=PIPE,
                     universal_newlines=True)
     IP = ipAddress.stdout  # todo fix mulitple IPs
     IP = IP.rstrip('\n')
@@ -68,12 +66,11 @@ def calculatePosNegRatio(indicator):
 with open('config.yaml') as stream:
     config = yaml.safe_load(stream)
 
-ipFinderCommand = config['ipFinderCommand']
-dstatCommand = config['dstatCommand']
-evaluationMethod = config['evaluationMethod']
+IPFINDERCOMMAND = config['ipFinderCommand']
+DSTATCOMMAND = config['dstatCommand']
+EVALUATIONMETHOD = config['evaluationMethod']
 DETECTIONTHRESHOLD = config['detectionThreshold']
 HISTORYLEN = config['historyLen']
-RESPONSEPORT = config['responsePort']
 
 # CONST
 METRICSNAME = utils.METRICS
@@ -100,7 +97,7 @@ while True:
     IP = getIP()
 
     # start observation and collect system metrics
-    dstatOut = run(dstatCommand, stdout=PIPE,
+    dstatOut = run(DSTATCOMMAND, stdout=PIPE,
                    stderr=PIPE, universal_newlines=True)
     dstatLines = dstatOut.stdout
 
@@ -158,17 +155,18 @@ while True:
                         timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
         # no policy rule existing for this metric
         if not found:
-            observer.info('{}|{}| Value: {}, No rule [0]'.format(
+            observer.info('{}|{}| Value: {}, No rule: [0]'.format(
                 timestamp, metricName, metricNumber))
 
+    # calculate % and find best MTD
     calculatePosNegRatio(mtdIndicator)
     mtdHierarchy = dict(sorted(
-        mtdIndicator.items(), key=lambda i: i[1][2], reverse=True))  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
+        mtdIndicator.items(), key=lambda i: i[1][EVALUATIONMETHOD], reverse=True))  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
     mtdMethod = list(mtdHierarchy.keys())[0]
     mtdPercentage = list(mtdHierarchy.items())[0][1][2]
     mtdCommand = '{}.{}()'.format(mtdMethod, mtdMethod)
 
-    # detection hierarchy: Rootkit:(0.75|3:1), Ransomware:(0.5|1:1), CnC:(0.33|1:2)
+    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2)
     detectionStr = ''
     for malwareType in mtdHierarchy.items():
         detectionStr += '{}:({:.2f}|{:d}:{:d}), '.format(
