@@ -49,7 +49,7 @@ def removeUnits(metricsNumbersArray):
 
     return systemMetrics
 
-def indicatorRatio(indicator):
+def calculatePosNegRatio(indicator):
     # v[0] = # positive hits
     # v[1] = # negative hits
     for k, v in indicator.items():
@@ -83,6 +83,12 @@ deployer = setupLogger('deployer', 'deployer.log')
 # INIT POLICY
 policy = pd.read_csv('expertBasedIfThen.csv', header=None)
 policy.columns = utils.POLICYCOLUMNS
+
+mtdIndicator = {
+    'MTD1':[0,0,0],
+    'MTD2':[0,0,0],
+    'MTD3':[0,0,0],
+}
 
 # MTD policy selection loop
 while True:
@@ -123,31 +129,39 @@ while True:
     systemMetricValues = np.array(systemMetricValuesHistory)
     avgSysteMetricValues = np.average(systemMetricValues, axis=0)
     
-    mtdIndicator = {
-        'MTD1':0,
-        'MTD2':0,
-        'MTD3':0,
-    }
 
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(avgSysteMetricValues, METRICSNAME):
         # compare to all existings policy rules
         found = False
-        
         for index, rule in policy.iterrows(): # [index][rule]
+            # at least one policy rule for this metric?
             if metricName == rule['metric']:
+                found = True
+                #  fall below threshold: indicator for malware
                 if (rule[1] == '<=') & (float(metricNumber) <= float(rule[2])):
-                    mtdIndicator[rule[3]] += 1
-                    print('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
+                    mtdIndicator[rule[3]][0] += 1
+                    print('{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [+]'.format(
                         timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
 
-                # exceed critical threshold as indicator
+                # exceed critical threshold: indicator for malware
                 elif (rule[1] == '>=') & (float(metricNumber) >= float(rule[2])):
-                    mtdIndicator[rule[3]] += 1
-                    print('{}|{}| Value: {}, Metric: {} {:.2f}: ({})'.format(
-                        timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))    
-    
-    mtdHierarchy = dict(sorted(mtdIndicator.items(), key=lambda x:x[1], reverse=True))
+                    mtdIndicator[rule[3]][0] += 1
+                    print('{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [+]'.format(
+                        timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
+                # normal behaviour
+                else:
+                    mtdIndicator[rule[3]][1] += 1
+                    print('{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [-]'.format(
+                        timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
+        # no policy rule existing for this metric
+        if not found:
+            print('{}|{}| Value: {}, No rule [0]'.format(
+                        timestamp, metricName, metricNumber))
+
+    calculatePosNegRatio(mtdIndicator)
+    mtdHierarchy = dict(sorted(
+        mtdIndicator.items(), key=lambda i: i[1][2], reverse=True)) # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
     mtdMethod = list(mtdHierarchy.keys())[0]
     mtdCommand = '{}.{}()'.format(mtdMethod, mtdMethod)
     exec(mtdCommand)
