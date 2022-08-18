@@ -1,4 +1,4 @@
-POLICYCOLUMNS = ['malware', 'metric', 'sign', 'threshold']
+POLICYCOLUMNS = ['metric', 'sign', 'threshold', 'mtd']
 
 CNC = ['httpbackdoor', 'BASHLITE', 'backdoor', 'thetick']
 ROOTKIT = ['beurk', 'bdvl']
