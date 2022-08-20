@@ -186,6 +186,7 @@ while True:
         endMTDDeploymentTime = time.time()
         deployer.info('{}|Deyploying of {} took {:.2f}s'.format(
             timestamp, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)))
+        time.sleep(60)
 
     else:
         deployer.info('{}|No deployment: No command was sent |{}'.format(
