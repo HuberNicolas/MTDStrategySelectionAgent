@@ -5,12 +5,13 @@ import yaml
 import re
 import time
 import logging
+import os
 from subprocess import PIPE, run
+import subprocess
 import utils
 from MTD import MTD1, MTD2, MTD3
 
 # FUNCTIONS
-
 
 def setupLogger(name, log_file, level=logging.INFO):
     handler = logging.FileHandler(log_file)
@@ -160,29 +161,35 @@ while True:
 
     # calculate % and find best MTD
     calculatePosNegRatio(mtdIndicator)
-    mtdHierarchy = dict(sorted(
-        mtdIndicator.items(), key=lambda i: i[1][EVALUATIONMETHOD], reverse=True))  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
-    mtdMethod = list(mtdHierarchy.keys())[0]
-    mtdPercentage = list(mtdHierarchy.items())[0][1][2]
-    mtdCommand = '{}.{}()'.format(mtdMethod, mtdMethod)
+    mtdHierarchy = sorted(
+        mtdIndicator.items(), key=lambda i: i[1][2], reverse=True)  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
+    mtdMethod = mtdHierarchy[0][0]
+    mtdPercentage = mtdHierarchy[0][1][2]
 
-    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2)
+    if mtdMethod == 'MTD1': # Ransomware
+        mtdCommand = 'python3 /root/MTDPolicy/MTD/Ransomware/CreateDummyFiles.py --path=/root/sample-data --numberOfDummyFiles=30 --numberOfDummyFilesPerSubdirectory=15 --size=10 --extension=pdf'
+    elif mtdMethod == 'MTD2': # CnC
+        mtdCommand = 'python3 /root/MTDPolicy/MTD/CnC/ChangeIpAddress.py'
+    elif mtdMethod == 'MTD3': # Rootkit
+        mtdCommand = 'python3 /root/MTDPolicy/MTD/Rootkit/RemoveRootkit.py'
+    
+    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2) 
     detectionStr = ''
-    for malwareType in mtdHierarchy.items():
+    for mtd in mtdHierarchy:
         detectionStr += '{}:({:.2f}|{:d}:{:d}), '.format(
-            malwareType[0], malwareType[1][2], malwareType[1][0], malwareType[1][1])
+            mtd[0], mtd[1][2], mtd[1][0], mtd[1][1])
     detectionHierarchyStr = detectionStr[:-2]  # remove '),'
 
     endObservationTime = time.time()
     observer.info('{}|Observation took {:.2f}s'.format(
         timestamp, (endObservationTime - startObservationTime)))
-
     # check threshold
     if (mtdPercentage >= DETECTIONTHRESHOLD):
         deployer.critical('{}|Deyployed : {} |{}'.format(
             timestamp, mtdMethod, detectionHierarchyStr))
         startMTDDeploymentTime = time.time()
-        exec(mtdCommand)
+        #os.system(mtdCommand) does not wait
+        subprocess.call(mtdCommand.split())
         endMTDDeploymentTime = time.time()
         deployer.info('{}|Deyploying of {} took {:.2f}s'.format(
             timestamp, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)))
