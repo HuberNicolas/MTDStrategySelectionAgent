@@ -51,10 +51,11 @@ def httpBackdoor():
 def beurk():
     log.info('Start beurk')
     os.chdir('/root/Malware/beurk/')
-    subprocess.call(['ls'])
-    command = 'make && make infect'
+    firstCommand = 'make'
+    secondCommand = 'make infect'
     start = time.time()
-    subprocess.call(command.split(' '))
+    subprocess.call(firstCommand.split(' '))
+    subprocess.call(secondCommand.split(' '))
     end = time.time()
     log.info('Ended beurk. Duration {:.2f}s'.format(end-start))
 
@@ -97,7 +98,7 @@ def BASHLITE():
     log.info('Launched BASHLITE')
 
 
-ATTACKVECTOR = [RansomwarePoC, httpBackdoor, beurk]
+ATTACKVECTOR = [beurk, RansomwarePoC, httpBackdoor]
 
 
 def main():
