@@ -21,7 +21,7 @@ cd /root/MTDPolicy/data/csv/
 
 iterations=1
 delay=1
-observations=360
+observations=600
 for ((i = 0 ; i < $iterations ; i++)); do
     now=`date +%F-%H-%M-%S`
     suffix="-log.csv"

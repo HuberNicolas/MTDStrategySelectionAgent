@@ -101,6 +101,7 @@ ATTACKVECTOR = [RansomwarePoC, httpBackdoor, beurk]
 
 
 def main():
+    time.sleep(60)
     start = time.time()
     for malware in ATTACKVECTOR:
         malware()
