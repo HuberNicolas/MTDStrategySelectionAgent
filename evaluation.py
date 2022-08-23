@@ -79,7 +79,6 @@ def backdoor():
 
 
 def RansomwarePoC():
-
     log.info('Start Ransomware-PoC')
     os.chdir('/root/Malware/Ransomware-PoC/')
     subprocess.call(['ls'])
@@ -105,7 +104,9 @@ def main():
     time.sleep(60)
     start = time.time()
     for malware in ATTACKVECTOR:
+        print('start {}'.format(malware.__name__))
         malware()
+        print('end {}'.format(malware.__name__))
         time.sleep(60)
     end = time.time()
     log.info('Ended Evaluation. Duration {:.2f}s'.format(end-start))
