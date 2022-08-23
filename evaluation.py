@@ -9,6 +9,8 @@ time.sleep(5)
 subprocess.call(['rm', '-r', 'test/'])
 
 '''
+
+
 def setupLogger(name, log_file, level=logging.INFO):
     handler = logging.FileHandler(log_file)
     handler.setFormatter(formatter)
@@ -18,8 +20,11 @@ def setupLogger(name, log_file, level=logging.INFO):
     logger.addHandler(handler)
 
     return logger
+
+
 formatter = logging.Formatter('%(asctime)s - %(message)s')
 log = setupLogger('log', 'attack.log')
+
 
 def thetick():
     os.chdir('/root/Malware/thetick/')
@@ -31,18 +36,28 @@ def thetick():
 
 
 def httpBackdoor():
+    log.info('Start httpBackdoor')
     os.chdir('/root/Malware/httpBackdoor/')
-    print(os.getcwd())
-    subprocess.call(['ls'])
-    #subprocess.call(['python3', 'httpBackdoor.py'])
-    log.info('Launched httpBackdoor')
+    command = 'python3 httpBackdoor.py'
+    try:
+        start = time.time()
+        subprocess.call(command.split(' '), timeout=120)
+    except subprocess.TimeoutExpired:
+        end = time.time()
+        pass
+    log.info('Ended httpBackdoor. Duration: {:.2f}s'.format(end-start))
+
 
 def beurk():
+    log.info('Start beurk')
     os.chdir('/root/Malware/beurk/')
-    print(os.getcwd())
     subprocess.call(['ls'])
-    #subprocess.call(['make', '&&', 'make', 'infect'])
-    log.info('Launched beurk')
+    command = 'make && make infect'
+    start = time.time()
+    subprocess.call(command.split(' '))
+    end = time.time()
+    log.info('Ended beurk. Duration {:.2f}s'.format(end-start))
+
 
 def bdvl():
     os.chdir('/root/Malware/beurk/')
@@ -50,8 +65,9 @@ def bdvl():
     subprocess.call(['ls'])
     #subprocess.call(['etc/auto.sh', 'build/super.b64'])
     #subprocess.call(['systemctl', 'restart', 'sshd'])
-    #subprocess.call(['make'])
+    # subprocess.call(['make'])
     log.info('Launched bdvl')
+
 
 def backdoor():
     os.chdir('/root/Malware/backdoor/')
@@ -60,42 +76,38 @@ def backdoor():
     #subprocess.call(['sudo', 'python3', 'client.py'])
     log.info('Launched backdoor')
 
+
 def RansomwarePoC():
+
+    log.info('Start Ransomware-PoC')
     os.chdir('/root/Malware/Ransomware-PoC/')
-    print(os.getcwd())
     subprocess.call(['ls'])
-    #subprocess.call(['python3', 'main.py', '-p', '"/root/sample-data"', ,'-e'])
-    log.info('Launched Ransomware-PoC')
+    command = 'python3 main.py -p /root/sample-data -e'
+    start = time.time()
+    subprocess.call(command.split(' '))
+    end = time.time()
+    log.info('Ended Ransomware-PoC. Duration {:.2f}s'.format(end-start))
+
 
 def BASHLITE():
     os.chdir('/root/Malware/BASHLITE/')
     print(os.getcwd())
     subprocess.call(['ls'])
-    #subprocess.call(['./client.py'])
+    # subprocess.call(['./client.py'])
     log.info('Launched BASHLITE')
 
-CNC = [BASHLITE(), backdoor(), httpBackdoor(), thetick()]
+
+ATTACKVECTOR = [RansomwarePoC, httpBackdoor, beurk]
+
 
 def main():
-    '''
-    thetick()
-    httpBackdoor()
-    beurk()
-    bdvl()
-    backdoor()
-    RansomwarePoC()
-    BASHLITE()
-    '''
-    for malware in CNC:
-        try:
-            malware
-        except:
-            pass
-        time.sleep(40)
-
-
+    start = time.time()
+    for malware in ATTACKVECTOR:
+        malware()
+        time.sleep(60)
+    end = time.time()
+    log.info('Ended Evaluation. Duration {:.2f}s'.format(end-start))
 
 
 if __name__ == "__main__":
     main()
-
