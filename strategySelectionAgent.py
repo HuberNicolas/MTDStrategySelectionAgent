@@ -13,6 +13,7 @@ from MTD import MTD1, MTD2, MTD3
 
 # FUNCTIONS
 
+
 def setupLogger(name, log_file, level=logging.INFO):
     handler = logging.FileHandler(log_file)
     handler.setFormatter(formatter)
@@ -166,14 +167,14 @@ while True:
     mtdMethod = mtdHierarchy[0][0]
     mtdPercentage = mtdHierarchy[0][1][2]
 
-    if mtdMethod == 'MTD1': # Ransomware
+    if mtdMethod == 'MTD1':  # Ransomware
         mtdCommand = 'python3 /root/MTDPolicy/MTD/Ransomware/CreateDummyFiles.py --path=/root/sample-data --numberOfDummyFiles=30 --numberOfDummyFilesPerSubdirectory=15 --size=10 --extension=pdf'
-    elif mtdMethod == 'MTD2': # CnC
+    elif mtdMethod == 'MTD2':  # CnC
         mtdCommand = 'python3 /root/MTDPolicy/MTD/CnC/ChangeIpAddress.py'
-    elif mtdMethod == 'MTD3': # Rootkit
+    elif mtdMethod == 'MTD3':  # Rootkit
         mtdCommand = 'python3 /root/MTDPolicy/MTD/Rootkit/RemoveRootkit.py'
-    
-    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2) 
+
+    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2)
     detectionStr = ''
     for mtd in mtdHierarchy:
         detectionStr += '{}:({:.2f}|{:d}:{:d}), '.format(
@@ -188,7 +189,7 @@ while True:
         deployer.critical('{}|Deyployed : {} |{}'.format(
             timestamp, mtdMethod, detectionHierarchyStr))
         startMTDDeploymentTime = time.time()
-        #os.system(mtdCommand) does not wait
+        # os.system(mtdCommand) does not wait
         subprocess.call(mtdCommand.split())
         endMTDDeploymentTime = time.time()
         deployer.info('{}|Deyploying of {} took {:.2f}s'.format(
