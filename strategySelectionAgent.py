@@ -5,11 +5,9 @@ import yaml
 import re
 import time
 import logging
-import os
 from subprocess import PIPE, run
 import subprocess
 import utils
-from MTD import MTD1, MTD2, MTD3
 
 # FUNCTIONS
 
@@ -74,10 +72,6 @@ EVALUATIONMETHOD = config['evaluationMethod']
 DETECTIONTHRESHOLD = config['detectionThreshold']
 HISTORYLEN = config['historyLen']
 
-# CONST
-METRICSNAME = utils.METRICS
-MALWARETYPES = utils.MALWARETYPES
-
 # INIT LOGGING
 formatter = logging.Formatter('%(levelname)s - %(message)s')
 observer = setupLogger('observer', 'observer.log')
@@ -87,7 +81,9 @@ deployer = setupLogger('deployer', 'deployer.log')
 policy = pd.read_csv('expertBasedIfThen.csv', header=None)
 policy.columns = utils.POLICYCOLUMNS
 
-# MTD policy selection loop
+# CONST
+METRICSNAME = utils.METRICS
+
 while True:
     startObservationTime = time.time()
     mtdIndicator = {
@@ -98,6 +94,7 @@ while True:
     # determine IP
     IP = getIP()
 
+    # OBSERVER COMPONENT
     # start observation and collect system metrics
     dstatOut = run(DSTATCOMMAND, stdout=PIPE,
                    stderr=PIPE, universal_newlines=True)
@@ -131,6 +128,7 @@ while True:
     systemMetricValues = np.array(systemMetricValuesHistory)
     avgSysteMetricValues = np.average(systemMetricValues, axis=0)
 
+    # POLICY COMPONENT
     # iterate over all captures values (value, metricName)
     for metricNumber, metricName in zip(avgSysteMetricValues, METRICSNAME):
         # compare to all existings policy rules
@@ -160,19 +158,19 @@ while True:
             observer.info('{}|{}| Value: {}, No rule: [0]'.format(
                 timestamp, metricName, metricNumber))
 
-    # calculate % and find best MTD
+    # find best MTD according to settings
     calculatePosNegRatio(mtdIndicator)
     mtdHierarchy = sorted(
-        mtdIndicator.items(), key=lambda i: i[1][2], reverse=True)  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
+        mtdIndicator.items(), key=lambda i: i[1][EVALUATIONMETHOD], reverse=True)  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
     mtdMethod = mtdHierarchy[0][0]
     mtdPercentage = mtdHierarchy[0][1][2]
 
     if mtdMethod == 'MTD1':  # Ransomware
-        mtdCommand = 'python3 /root/MTDPolicy/MTD/Ransomware/CreateDummyFiles.py --path=/root/sample-data --numberOfDummyFiles=30 --numberOfDummyFilesPerSubdirectory=15 --size=10 --extension=pdf'
+        mtdCommand = config['ransomwareMTD']
     elif mtdMethod == 'MTD2':  # CnC
-        mtdCommand = 'python3 /root/MTDPolicy/MTD/CnC/ChangeIpAddress.py'
+        mtdCommand = config['cncMTD']
     elif mtdMethod == 'MTD3':  # Rootkit
-        mtdCommand = 'python3 /root/MTDPolicy/MTD/Rootkit/RemoveRootkit.py'
+        mtdCommand = config['rootkitMTD']
 
     # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2)
     detectionStr = ''
@@ -186,11 +184,12 @@ while True:
         timestamp, (endObservationTime - startObservationTime)))
     # check threshold
     if (mtdPercentage >= DETECTIONTHRESHOLD):
+
+        # DEPLOYMENT COMPONENT
         deployer.critical('{}|Deyployed : {} |{}'.format(
             timestamp, mtdMethod, detectionHierarchyStr))
         startMTDDeploymentTime = time.time()
-        # os.system(mtdCommand) does not wait
-        subprocess.call(mtdCommand.split())
+        subprocess.call(mtdCommand.split())  # use subprocess that does wait
         endMTDDeploymentTime = time.time()
         deployer.info('{}|Deyploying of {} took {:.2f}s'.format(
             timestamp, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)))
