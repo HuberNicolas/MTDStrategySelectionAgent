@@ -1,42 +1,17 @@
----  # yaml document beginning
-# This is the config.yaml file for the MTDPolicy Framework
-
-#key: value
+---
+# This is the config file for the MTD Strategy Selection Agent Framework
 appname: MTD Strategy Selection Agent
 
-# all options:
-options:
-  WINDOWS: [30, 60, 120, 150, 180, 300, 360]
-  FUNCTIONS: ['mean', 'max', 'min']
-  infected: [1, 2, 4, 5,] # positions of the infected datasets
-  healthy: [0] # position of the healthy dataset
+# GENERAL
+ipFinderCommand: ['hostname', '-I']
+dstatCommand: ['dstat', '-t', '--cpu', '--mem', '--fs', '-d', '--disk-tps', '-n', '--tcp', '--socket','-y', '-p', '-N', 'eth0', '1', '11']
 
-
-# set options
-windows: [30, 60, 120, 150, 180, 300, 360] # number of datapoints of the non-overlapping windows
-infected: [0, 1, 5, 6, 7, 8, 9] # positions of the infected datasets
-healthy: [2] # position of the healthy dataset
-functions: ['mean'] # aggragation functions
-
-
-# policy creation
-## general
-windowSize: 360 # define the window size for which the policy should be generated
-aggregateFunctions: ['mean', 'min', 'max']
-
-seed: 10 # random seed to obtain the same policies in the random approach
-randomPolicyCreation: False # enable random policy creation
-randomNumberOfPolicyRules: False 
-maxNumberOfPolicyRules: 6
-minNumberOfPolicyRules: 3
-exactNumberOfPolicyRules: 4
-completePolicyCreation: True # enable complete policy creation
-expertPolicyCreation: False
-
-
-# policy selection
+# PARAMETERS
+historyLen: 10
 detectionThreshold: 0.6
 evaluationMethod: 2 # 0: sort by #pos, 2: sort by %
-historyLen: 10
-dstatCommand: ['dstat', '-t', '--cpu', '--mem', '--fs', '-d', '--disk-tps', '-n', '--tcp', '--socket','-y', '-p', '-N', 'eth0', '1', '11']
-ipFinderCommand: ['hostname', '-I']
+
+# MTD COMMANDS
+ransomwareMTD: 'python3 /root/MTDPolicy/MTD/Ransomware/CreateDummyFiles.py --path=/root/sample-data --numberOfDummyFiles=30 --numberOfDummyFilesPerSubdirectory=15 --size=10 --extension=pdf'
+cncMTD: 'python3 /root/MTDPolicy/MTD/CnC/ChangeIpAddress.py'
+rootkitMTD: 'python3 /root/MTDPolicy/MTD/Rootkit/RemoveRootkit.py'
