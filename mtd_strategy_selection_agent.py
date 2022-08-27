@@ -179,7 +179,7 @@ while True:
     elif mtdMethod == 'MTD4':  # CnC
         os.chdir('/root/MTDPolicy/')
         mtdCommand = config['cncMTD']
-    print(os.getcwd())
+
     # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2), MTD4:(0|0:4)
     detectionStr = ''
     for mtd in mtdHierarchy:
