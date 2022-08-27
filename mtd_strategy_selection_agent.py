@@ -8,6 +8,7 @@ import logging
 from subprocess import PIPE, run
 import subprocess
 import utils
+import os
 
 # FUNCTIONS
 
@@ -167,14 +168,18 @@ while True:
     mtdPercentage = mtdHierarchy[0][1][2]
 
     if mtdMethod == 'MTD1':  # Ransomware
+        os.chdir('/root/MTDPolicy/')
         mtdCommand = config['ransomwareMTD']
     elif mtdMethod == 'MTD2':  # CnC
+        os.chdir('/root/MTDPolicy')
         mtdCommand = config['cncMTD']
     elif mtdMethod == 'MTD3':  # Rootkit
+        os.chdir('/root/MTDPolicy/MTD/Rootkit')
         mtdCommand = config['rootkitMTD']
     elif mtdMethod == 'MTD4':  # CnC
+        os.chdir('/root/MTDPolicy/')
         mtdCommand = config['cncMTD']
-
+    print(os.getcwd())
     # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2), MTD4:(0|0:4)
     detectionStr = ''
     for mtd in mtdHierarchy:
