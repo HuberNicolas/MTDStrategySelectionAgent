@@ -78,8 +78,8 @@ observer = setupLogger('observer', 'observer.log')
 deployer = setupLogger('deployer', 'deployer.log')
 
 # INIT POLICY
-policy = pd.read_csv('expertBasedIfThen.csv', header=None)
-policy.columns = utils.POLICYCOLUMNS
+policyDB = pd.read_csv('policy_db.csv', header=None)
+policyDB.columns = utils.POLICYCOLUMNS
 
 # CONST
 METRICSNAME = utils.METRICS
@@ -90,6 +90,7 @@ while True:
         'MTD1': [0, 0, 0],
         'MTD2': [0, 0, 0],
         'MTD3': [0, 0, 0],
+        'MTD4': [0, 0, 0],
     }
     # determine IP
     IP = getIP()
@@ -133,7 +134,7 @@ while True:
     for metricNumber, metricName in zip(avgSysteMetricValues, METRICSNAME):
         # compare to all existings policy rules
         found = False
-        for index, rule in policy.iterrows():  # [index][rule]
+        for index, rule in policyDB.iterrows():  # [index][rule]
             # at least one policy rule for this metric?
             if metricName == rule['metric']:
                 found = True
@@ -171,8 +172,10 @@ while True:
         mtdCommand = config['cncMTD']
     elif mtdMethod == 'MTD3':  # Rootkit
         mtdCommand = config['rootkitMTD']
+    elif mtdMethod == 'MTD4':  # CnC
+        mtdCommand = config['cncMTD']
 
-    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2)
+    # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2), MTD4:(0|0:4)
     detectionStr = ''
     for mtd in mtdHierarchy:
         detectionStr += '{}:({:.2f}|{:d}:{:d}), '.format(
