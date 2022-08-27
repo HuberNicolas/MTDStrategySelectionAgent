@@ -1,3 +1,3 @@
 #!/bin/bash
 
-bash observer-dstat.sh & bash netstatobserver.sh ; fg
+bash observer-dstat.sh & bash netstat-observer.sh ; fg
