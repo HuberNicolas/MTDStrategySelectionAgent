@@ -1,5 +1,5 @@
 #!/bin/bash
-observations=600
+observations=360
 now=`date +%F-%H-%M-%S`
 suffix="-netstatlog.txt"
 filename="$path$now$suffix"
