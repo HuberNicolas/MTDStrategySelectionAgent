@@ -9,6 +9,7 @@ from subprocess import PIPE, run
 import subprocess
 import utils
 import os
+import datetime
 
 # FUNCTIONS
 
@@ -192,17 +193,19 @@ while True:
         timestamp, (endObservationTime - startObservationTime)))
     # check threshold
     if (mtdPercentage >= DETECTIONTHRESHOLD):
-
+        timeDetected = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         # DEPLOYMENT COMPONENT
         deployer.critical('{}|Deyployed : {} |{}'.format(
-            timestamp, mtdMethod, detectionHierarchyStr))
+            timeDetected, mtdMethod, detectionHierarchyStr))
         startMTDDeploymentTime = time.time()
         subprocess.call(mtdCommand.split())  # use subprocess that does wait
         endMTDDeploymentTime = time.time()
+        timeDeployed = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         deployer.info('{}|Deyploying of {} took {:.2f}s'.format(
-            timestamp, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)))
+            timeDeployed, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)))
         time.sleep(60)
 
     else:
+        timeNoDeployment = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         deployer.info('{}|No deployment: No command was sent |{}'.format(
-            timestamp, detectionHierarchyStr))
+            timeNoDeployment, detectionHierarchyStr))
