@@ -1,11 +1,2 @@
 # Cache
-/observer/ObserverMetrics/__pycache__/
 __pycache__
-# Plots folder
-/data/plots/
-# CSV files
-*.csv
-# Plot files
-*.png
-# Log files
-*.log

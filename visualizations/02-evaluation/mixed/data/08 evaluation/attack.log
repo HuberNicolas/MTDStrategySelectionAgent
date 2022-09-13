@@ -1,0 +1,7 @@
+2022-08-29 08:44:00,866 - Start beurk
+2022-08-29 08:44:07,246 - Ended beurk. Duration 6.37s
+2022-08-29 08:45:07,306 - Start Ransomware-PoC
+2022-08-29 08:47:23,295 - Ended Ransomware-PoC. Duration 135.97s
+2022-08-29 08:48:23,306 - Start httpBackdoor
+2022-08-29 08:50:23,318 - Ended httpBackdoor. Duration: 120.01s
+2022-08-29 08:51:23,379 - Ended Evaluation. Duration 442.51s
