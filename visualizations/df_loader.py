@@ -11,42 +11,21 @@ TIMEFORMAT = '%Y-%d-%m %H:%M:%S'
 YEARSTRING = '2022-'
 TIMECOL = 'time'
 KEEP = 1
-COLNAMES = [
-    'time',
-    'usr',
-    'sys',
-    'idl',
-    'wai',
-    'hiq',
-    'siq',
-    'used',
-    'buff',
-    'cach',
-    'free',
-    'files',
-    'inodes',
-    'read',
-    'writ',
-    'reads',
-    'writs',
-    'recv',
-    'send',
-    'lis',
-    'act',
-    'syn',
-    'tim',
-    'clo',
-    'tot',
-    'tcp',
-    'udp',
-    'raw',
-    'frg',
-    'int',
-    'csw',
-    'run',
-    'blk',
-    'new',
+METRICS = [
+    'usr', 'sys', 'idl', 'wai', 'hiq', 'siq',
+    'used', 'buff', 'cach', 'free',
+    'files', 'inodes',
+    'read',  'writ',
+    'reads', 'writs',
+    'recv', 'send',
+    'lis', 'act', 'syn', 'tim', 'clo',
+    'tot', 'tcp', 'udp', 'raw', 'frg',
+    'int', 'csw',
+    'run', 'blk', 'new'
 ]
+
+COLNAMES = list(METRICS) # deepcopy
+COLNAMES.insert(0, 'time')
 
 # FUNCTIONS
 

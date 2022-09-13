@@ -7,7 +7,7 @@ import time
 import logging
 from subprocess import PIPE, run
 import subprocess
-import utils
+from metrics_labels import METRICS as METRICSNAME, POLICYCOLUMNS
 import os
 import datetime
 
@@ -81,10 +81,8 @@ deployer = setupLogger('deployer', 'deployer.log')
 
 # INIT POLICY
 policyDB = pd.read_csv('policy_db.csv', header=None)
-policyDB.columns = utils.POLICYCOLUMNS
+policyDB.columns = POLICYCOLUMNS
 
-# CONST
-METRICSNAME = utils.METRICS
 
 while True:
     startObservationTime = time.time()
