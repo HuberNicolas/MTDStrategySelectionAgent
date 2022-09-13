@@ -1,0 +1,8 @@
+idl,<=,50,MTD1
+sys,>=,24,MTD1
+usr,>=,10,MTD1
+writ,>=,200000,MTD1
+writs,>=,20,MTD1
+tim,>=,6,MTD2
+new,>=,17,MTD3
+recv,>=,2500,MTD4
