@@ -1,7 +1,7 @@
 #!/bin/bash
 
 : '
-Observer script for
+Monitoring script for
 CPU metrics
 RAM metrics
 Disk metrics
