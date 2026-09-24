@@ -1,2 +1,20 @@
-# Cache
-__pycache__
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# uv
+# (uv.lock is committed on purpose to reproduce the 2022 dependency versions)
+
+# Agent runtime output
+observer.log
+deployer.log
+attack.log
+nohup.out
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
