@@ -1,5 +1,6 @@
-import psutil
 import time
+
+import psutil
 
 
 def find_most_intensive_processes_pids():
@@ -19,10 +20,10 @@ def find_most_intensive_processes_pids():
             proc_percent = proc.cpu_percent() / core_count
             proc_name = proc.name()
             proc_pid = proc.pid
-            safe_processes = ['es_sensor', 'CreateDummyFiles', 'ChangeFileTypes']
+            safe_processes = ["es_sensor", "CreateDummyFiles", "ChangeFileTypes"]
             if proc_name not in safe_processes and proc_percent >= 10:
                 tuple_per_process.append((proc_percent, proc_pid, proc_name))
-        except:
+        except:  # noqa: E722 — a process may vanish mid-scan; skip it and continue
             pass
 
     tuple_per_process.sort(reverse=True)
@@ -41,7 +42,7 @@ def check_if_process_is_ransomware(pid):
             for file in process.open_files():
                 list_of_files.add(file.path)
 
-        print('Suspect process modified these files: ')
+        print("Suspect process modified these files: ")
         print(list_of_files)
 
         if len(list_of_files) >= 5:
@@ -68,9 +69,9 @@ def main():
                         print("Process: " + name + " with pid [" + str(process_pid) + "] was terminated.")
                         break
         else:
-            print('No suspected ransomware could be found, and therefore no process was finished.')
+            print("No suspected ransomware could be found, and therefore no process was finished.")
             break
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

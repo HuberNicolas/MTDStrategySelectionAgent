@@ -15,17 +15,17 @@ def getListOfFiles(dirName):
 
 
 def main():
-    file_object = open('sample-data-ranswomware.txt', 'a')
-    dirName = '/root/sample-data'
+    file_object = open("sample-data-ranswomware.txt", "a")
+    dirName = "/root/sample-data"
     listOfFiles = getListOfFiles(dirName)
 
     # Print the files
     fileCounter = 1
     for elem in listOfFiles:
-        file_object.writelines('{}: {}\n'.format(fileCounter, elem))
+        file_object.writelines("{}: {}\n".format(fileCounter, elem))
         print(elem)
         fileCounter += 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

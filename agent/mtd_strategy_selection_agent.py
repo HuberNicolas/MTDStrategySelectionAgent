@@ -1,15 +1,17 @@
 # IMPORTS
-import pandas as pd
-import numpy as np
-import yaml
-import re
-import time
-import logging
-from subprocess import PIPE, run
-import subprocess
-from metrics_labels import METRICS as METRICSNAME, POLICYCOLUMNS
-import os
 import datetime
+import logging
+import os
+import re
+import subprocess
+import time
+from subprocess import PIPE, run
+
+import numpy as np
+import pandas as pd
+import yaml
+from metrics_labels import METRICS as METRICSNAME
+from metrics_labels import POLICYCOLUMNS
 
 # FUNCTIONS
 
@@ -26,23 +28,22 @@ def setupLogger(name, log_file, level=logging.INFO):
 
 
 def getIP():
-    ipAddress = run(IPFINDERCOMMAND, stdout=PIPE, stderr=PIPE,
-                    universal_newlines=True)
+    ipAddress = run(IPFINDERCOMMAND, stdout=PIPE, stderr=PIPE, universal_newlines=True)
     IP = ipAddress.stdout  # todo fix mulitple IPs
-    IP = IP.rstrip('\n')
+    IP = IP.rstrip("\n")
     return IP
 
 
 def removeUnits(metricsNumbersArray):
     systemMetrics = []
     for number in metricsNumbers:
-        if 'M' in number:
+        if "M" in number:
             number = float(number[:-1])
             number = number * 1000 * 1000
-        elif 'k' in number:
+        elif "k" in number:
             number = float(number[:-1])
             number = number * 1000
-        elif 'B' in number:
+        elif "B" in number:
             number = float(number[:-1])
         else:
             number = float(number)
@@ -65,61 +66,59 @@ def calculatePosNegRatio(indicator):
 
 
 # INIT CONFIG
-with open('config.yaml') as stream:
+with open("config.yaml") as stream:
     config = yaml.safe_load(stream)
 
-IPFINDERCOMMAND = config['ipFinderCommand']
-DSTATCOMMAND = config['dstatCommand']
-EVALUATIONMETHOD = config['evaluationMethod']
-DETECTIONTHRESHOLD = config['detectionThreshold']
-HISTORYLEN = config['historyLen']
+IPFINDERCOMMAND = config["ipFinderCommand"]
+DSTATCOMMAND = config["dstatCommand"]
+EVALUATIONMETHOD = config["evaluationMethod"]
+DETECTIONTHRESHOLD = config["detectionThreshold"]
+HISTORYLEN = config["historyLen"]
 
 # INIT LOGGING
-formatter = logging.Formatter('%(levelname)s - %(message)s')
-observer = setupLogger('observer', 'observer.log')
-deployer = setupLogger('deployer', 'deployer.log')
+formatter = logging.Formatter("%(levelname)s - %(message)s")
+observer = setupLogger("observer", "observer.log")
+deployer = setupLogger("deployer", "deployer.log")
 
 # INIT POLICY
-policyDB = pd.read_csv('policy_db.csv', header=None)
+policyDB = pd.read_csv("policy_db.csv", header=None)
 policyDB.columns = POLICYCOLUMNS
 
 
 while True:
     startObservationTime = time.time()
     mtdIndicator = {
-        'MTD1': [0, 0, 0],
-        'MTD2': [0, 0, 0],
-        'MTD3': [0, 0, 0],
-        'MTD4': [0, 0, 0],
+        "MTD1": [0, 0, 0],
+        "MTD2": [0, 0, 0],
+        "MTD3": [0, 0, 0],
+        "MTD4": [0, 0, 0],
     }
     # determine IP
     IP = getIP()
 
     # OBSERVER COMPONENT
     # start observation and collect system metrics
-    dstatOut = run(DSTATCOMMAND, stdout=PIPE,
-                   stderr=PIPE, universal_newlines=True)
+    dstatOut = run(DSTATCOMMAND, stdout=PIPE, stderr=PIPE, universal_newlines=True)
     dstatLines = dstatOut.stdout
 
     # extract timestamp from first history entry[dd-mm hh:mm:ss], 01-08 15:13:48
     timestamp = re.findall(
-        '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', dstatLines.splitlines()[-HISTORYLEN])[0]
+        "[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]", dstatLines.splitlines()[-HISTORYLEN]
+    )[0]
 
     history = []
     # append last N entries to history
-    for i in range(-1, -(HISTORYLEN+1), -1):
+    for i in range(-1, -(HISTORYLEN + 1), -1):
         history.append(dstatLines.splitlines()[i])
     history.reverse()  # start with the earliest timestamp
 
     systemMetricValuesHistory = []
     for h in history:
         # extract timestamp
-        timestamp = re.findall(
-            '[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]', h)[0]
+        timestamp = re.findall("[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]", h)[0]
 
         # extract array of all numbers like 123.32, 1.4B, 34 34K
-        metricsNumbers = re.findall(
-            '[0-9.]+[a-zA-Z]|[0-9.]+', h[len(timestamp):])
+        metricsNumbers = re.findall("[0-9.]+[a-zA-Z]|[0-9.]+", h[len(timestamp) :])
 
         # postprocess to array with no postfixes (M, k and B for units)
         systemMetricValues = removeUnits(metricsNumbersArray=metricsNumbers)
@@ -136,77 +135,82 @@ while True:
         found = False
         for index, rule in policyDB.iterrows():  # [index][rule]
             # at least one policy rule for this metric?
-            if metricName == rule['metric']:
+            if metricName == rule["metric"]:
                 found = True
                 #  fall below threshold: indicator for malware
-                if (rule[1] == '<=') & (float(metricNumber) <= float(rule[2])):
+                if (rule[1] == "<=") & (float(metricNumber) <= float(rule[2])):
                     mtdIndicator[rule[3]][0] += 1
-                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [+]'.format(
-                        timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
+                    observer.warning(
+                        "{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [+]".format(
+                            timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]
+                        )
+                    )
 
                 # exceed critical threshold: indicator for malware
-                elif (rule[1] == '>=') & (float(metricNumber) >= float(rule[2])):
+                elif (rule[1] == ">=") & (float(metricNumber) >= float(rule[2])):
                     mtdIndicator[rule[3]][0] += 1
-                    observer.warning('{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [+]'.format(
-                        timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
+                    observer.warning(
+                        "{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [+]".format(
+                            timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]
+                        )
+                    )
                 # normal behaviour
                 else:
                     mtdIndicator[rule[3]][1] += 1
-                    observer.info('{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [-]'.format(
-                        timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]))
+                    observer.info(
+                        "{}|{}| Value: {}, Metric: {} {:.2f}: ({}) [-]".format(
+                            timestamp, metricName, metricNumber, rule[1], rule[2], rule[3]
+                        )
+                    )
         # no policy rule existing for this metric
         if not found:
-            observer.info('{}|{}| Value: {}, No rule: [0]'.format(
-                timestamp, metricName, metricNumber))
+            observer.info("{}|{}| Value: {}, No rule: [0]".format(timestamp, metricName, metricNumber))
 
     # find best MTD according to settings
     calculatePosNegRatio(mtdIndicator)
     mtdHierarchy = sorted(
-        mtdIndicator.items(), key=lambda i: i[1][EVALUATIONMETHOD], reverse=True)  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
+        mtdIndicator.items(), key=lambda i: i[1][EVALUATIONMETHOD], reverse=True
+    )  # [1][0]: sorting by absolute occurences, [1][2]: sorting by % occurences,
     mtdMethod = mtdHierarchy[0][0]
     mtdPercentage = mtdHierarchy[0][1][2]
 
-    if mtdMethod == 'MTD1':  # Ransomware
-        os.chdir('/root/MTDStrategySelectionAgent/agent/')
-        mtdCommand = config['ransomwareMTD']
-    elif mtdMethod == 'MTD2':  # CnC
-        os.chdir('/root/MTDStrategySelectionAgent/agent/')
-        mtdCommand = config['cncMTD']
-    elif mtdMethod == 'MTD3':  # Rootkit
-        os.chdir('/root/MTDStrategySelectionAgent/agent/MTD/Rootkit')
-        mtdCommand = config['rootkitMTD']
-    elif mtdMethod == 'MTD4':  # CnC
-        os.chdir('/root/MTDStrategySelectionAgent/agent/')
-        mtdCommand = config['cncMTD']
+    if mtdMethod == "MTD1":  # Ransomware
+        os.chdir("/root/MTDStrategySelectionAgent/agent/")
+        mtdCommand = config["ransomwareMTD"]
+    elif mtdMethod == "MTD2":  # CnC
+        os.chdir("/root/MTDStrategySelectionAgent/agent/")
+        mtdCommand = config["cncMTD"]
+    elif mtdMethod == "MTD3":  # Rootkit
+        os.chdir("/root/MTDStrategySelectionAgent/agent/MTD/Rootkit")
+        mtdCommand = config["rootkitMTD"]
+    elif mtdMethod == "MTD4":  # CnC
+        os.chdir("/root/MTDStrategySelectionAgent/agent/")
+        mtdCommand = config["cncMTD"]
 
     # detection hierarchy: MTD1:(0.75|3:1), MTD3:(0.5|1:1), MTD2:(0.33|1:2), MTD4:(0|0:4)
-    detectionStr = ''
+    detectionStr = ""
     for mtd in mtdHierarchy:
-        detectionStr += '{}:({:.2f}|{:d}:{:d}), '.format(
-            mtd[0], mtd[1][2], mtd[1][0], mtd[1][1])
+        detectionStr += "{}:({:.2f}|{:d}:{:d}), ".format(mtd[0], mtd[1][2], mtd[1][0], mtd[1][1])
     detectionHierarchyStr = detectionStr[:-2]  # remove '),'
 
     endObservationTime = time.time()
-    observer.info('{}|Observation took {:.2f}s'.format(
-        timestamp, (endObservationTime - startObservationTime)))
+    observer.info("{}|Observation took {:.2f}s".format(timestamp, (endObservationTime - startObservationTime)))
     # check threshold
-    if (mtdPercentage >= DETECTIONTHRESHOLD):
-        timeDetected = datetime.datetime.fromtimestamp(
-            time.time()).strftime('%Y-%m-%d %H:%M:%S')
+    if mtdPercentage >= DETECTIONTHRESHOLD:
+        timeDetected = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
         # DEPLOYMENT COMPONENT
-        deployer.critical('{}|Deyployed : {} |{}'.format(
-            timeDetected, mtdMethod, detectionHierarchyStr))
+        deployer.critical("{}|Deyployed : {} |{}".format(timeDetected, mtdMethod, detectionHierarchyStr))
         startMTDDeploymentTime = time.time()
         subprocess.call(mtdCommand.split())  # use subprocess that does wait
         endMTDDeploymentTime = time.time()
-        timeDeployed = datetime.datetime.fromtimestamp(
-            time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        deployer.info('{}|Deyploying of {} took {:.2f}s'.format(
-            timeDeployed, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)))
+        timeDeployed = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+        deployer.info(
+            "{}|Deyploying of {} took {:.2f}s".format(
+                timeDeployed, mtdMethod, (endMTDDeploymentTime - startMTDDeploymentTime)
+            )
+        )
         time.sleep(60)
 
     else:
-        timeNoDeployment = datetime.datetime.fromtimestamp(
-            time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        deployer.info('{}|No deployment: No command was sent |{}'.format(
-            timeNoDeployment, detectionHierarchyStr))
+        timeNoDeployment = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+        deployer.info("{}|No deployment: No command was sent |{}".format(timeNoDeployment, detectionHierarchyStr))

@@ -1,31 +1,54 @@
 import glob
 import os
+
 import pandas as pd
 
-
 # CONST
-DATAPATH = 'data/'
+DATAPATH = "data/"
 HEADER_LEN = 6
 DATAPOINTS = 1800
-TIMEFORMAT = '%Y-%d-%m %H:%M:%S'
-YEARSTRING = '2022-'
-TIMECOL = 'time'
+TIMEFORMAT = "%Y-%d-%m %H:%M:%S"
+YEARSTRING = "2022-"
+TIMECOL = "time"
 KEEP = 1
 METRICS = [
-    'usr', 'sys', 'idl', 'wai', 'hiq', 'siq',
-    'used', 'buff', 'cach', 'free',
-    'files', 'inodes',
-    'read',  'writ',
-    'reads', 'writs',
-    'recv', 'send',
-    'lis', 'act', 'syn', 'tim', 'clo',
-    'tot', 'tcp', 'udp', 'raw', 'frg',
-    'int', 'csw',
-    'run', 'blk', 'new'
+    "usr",
+    "sys",
+    "idl",
+    "wai",
+    "hiq",
+    "siq",
+    "used",
+    "buff",
+    "cach",
+    "free",
+    "files",
+    "inodes",
+    "read",
+    "writ",
+    "reads",
+    "writs",
+    "recv",
+    "send",
+    "lis",
+    "act",
+    "syn",
+    "tim",
+    "clo",
+    "tot",
+    "tcp",
+    "udp",
+    "raw",
+    "frg",
+    "int",
+    "csw",
+    "run",
+    "blk",
+    "new",
 ]
 
-COLNAMES = list(METRICS) # deepcopy
-COLNAMES.insert(0, 'time')
+COLNAMES = list(METRICS)  # deepcopy
+COLNAMES.insert(0, "time")
 
 # FUNCTIONS
 
@@ -35,7 +58,7 @@ def getDatasetFolderNames(path):
 
 
 def getCSVName(folderName):
-    return glob.glob('data/'+folderName+'/*.csv')[0]
+    return glob.glob("data/" + folderName + "/*.csv")[0]
 
 
 def getDirPath(path):
@@ -50,11 +73,11 @@ def generateDF(csvFilePath):
     df = pd.read_csv(csvFilePath, skiprows=HEADER_LEN + 1, header=None)
     # "13.749,"" will add a new col, wheras "13.749" will not
     # check if last col has any Na
-    if (df.iloc[:, -1:].isnull().values.any()):
+    if df.iloc[:, -1:].isnull().values.any():
         df = df.iloc[:, :-1]  # remove last col (NaN)
     df.columns = COLNAMES
     # remove duplicates
-    df = df.drop_duplicates(subset=['time'])  # todo should not be necessary
+    df = df.drop_duplicates(subset=["time"])  # todo should not be necessary
     # remove 1st row since its the avg of the current uptime
     df = df.iloc[1:]
     # adjust size
@@ -76,12 +99,19 @@ def reindex(df, keep):
 
 
 def saveCSV(df, prefix, path):
-    startDate = df.iloc[0].name.strftime('%Y-%m-%d')
-    startTime = df.iloc[0].name.strftime('%X')
-    endDate = df.iloc[-1].name.strftime('%Y-%m-%d')
-    endTime = df.iloc[-1].name.strftime('%X')
-    name = "{}{} {}-{}_{}-{}({}).csv".format(path, prefix, startDate.replace('-', ''), startTime.replace(
-        ':', ''), endDate.replace('-', ''), endTime.replace(':', ''), str(df.shape[0]))
+    startDate = df.iloc[0].name.strftime("%Y-%m-%d")
+    startTime = df.iloc[0].name.strftime("%X")
+    endDate = df.iloc[-1].name.strftime("%Y-%m-%d")
+    endTime = df.iloc[-1].name.strftime("%X")
+    name = "{}{} {}-{}_{}-{}({}).csv".format(
+        path,
+        prefix,
+        startDate.replace("-", ""),
+        startTime.replace(":", ""),
+        endDate.replace("-", ""),
+        endTime.replace(":", ""),
+        str(df.shape[0]),
+    )
     df.to_csv(name, index=False, header=True)
 
 
@@ -92,11 +122,11 @@ def main():
 
     for dsDirPath in datasetDirPaths:
         # extract foldername from path
-        datasetName = dsDirPath.split('/', 1)[1]
+        datasetName = dsDirPath.split("/", 1)[1]
         datasetNames.append(datasetName)
 
         # generate dataframe
-        csvFilePath = glob.glob(dsDirPath+'/*.csv')[0]
+        csvFilePath = glob.glob(dsDirPath + "/*.csv")[0]
         df = generateDF(csvFilePath=csvFilePath)
 
         # postprocess
