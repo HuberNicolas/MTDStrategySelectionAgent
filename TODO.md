@@ -26,6 +26,7 @@ Open tasks around making the repository public. See also [Known issues](README.m
 - [x] Choose and add a license (MIT)
 - [x] Add the project context (thesis, institution, supervisors) to the README
 - [x] Credit third parties (MTD Framework by Jordan Cedeño)
-- [ ] Unify the git author/committer email in history to `nicolas.huber.dev@gmail.com` (Phase 6, rewrites history + force-push — needs explicit go)
+- [x] Unify the git author/committer email in history to `nicolas.huber.dev@gmail.com` (dates and content unchanged)
+- [ ] Force-push the rewritten branches and tags to GitHub
 - [ ] Final secret and data check over files and git history, right before publishing
 - [ ] Flip repository visibility to public on GitHub (done manually in the GitHub settings)
